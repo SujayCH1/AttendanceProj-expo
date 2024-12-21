@@ -1,49 +1,42 @@
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Button, StyleSheet, Text, TextInput, View, Alert } from 'react-native';
 import React, { useContext, useState } from 'react';
 import { UserContext } from '../context/UserContext';
-import { Alert } from "react-native";
 
-const Login = () => {
+const Login = ({ navigation }: { navigation: any }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const User = useContext(UserContext);
 
     if (!User) {
-        return <Text>User not found</Text>;
+        return <Text>User context not found</Text>;
     }
 
     const { user, setUser } = User;
 
     const HandleEmailChange = (newEmail: string) => {
         setEmail(newEmail);
+        setUser(prevUser => ({
+            ...prevUser,
+            userEmail: newEmail
+        }));
     };
 
     const HandlePasswordChange = (newPassword: string) => {
         setPassword(newPassword);
+        setUser(prevUser => ({
+            ...prevUser,
+            userPassword: newPassword
+        }));
     };
 
-    const handleLogin = async (email: string, password: string) => {
-        // try {
-        //     const response = await fetch('http://192.168.152.217:8000/', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({ email, password }),
-        //     });
-
-        //     const data = await response.json();
-
-        //     if (response.ok) {
-        //         Alert.alert('Success', data.message);
-        //     } else {
-        //         Alert.alert('Error', data.message);
-        //     }
-        // } catch (error) {
-        //     Alert.alert('Error', 'Something went wrong');
-        //     console.error(error);
-        // }
-        
+    const handleLogin = () => {
+        if (user.userRole === "student") {
+            navigation.navigate('StudentView');
+        } else if (user.userRole === "faculty") {
+            navigation.navigate('TeacherView');
+        } else {
+            Alert.alert('Error', 'Invalid role. Please try again.');
+        }
     };
 
     return (
@@ -53,16 +46,16 @@ const Login = () => {
                 style={styles.input}
                 placeholder="Email"
                 value={email}
-                onChangeText={(value) => HandleEmailChange(value)}
+                onChangeText={HandleEmailChange}
             />
             <TextInput
                 style={styles.input}
                 placeholder="Password"
                 value={password}
                 secureTextEntry
-                onChangeText={(value) => HandlePasswordChange(value)}
+                onChangeText={HandlePasswordChange}
             />
-            <Button title="Login" onPress={() => handleLogin(email, password)} />
+            <Button title="Login" onPress={handleLogin} />
         </View>
     );
 };

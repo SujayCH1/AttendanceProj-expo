@@ -25,7 +25,7 @@ const defaultUser: UserType = {
 
 export const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider = ({ children  }: UserProviderProps) => {
+export const UserProvider = ({ children }: UserProviderProps) => {
     const [user, setUser] = useState<UserType>(defaultUser);
 
     return (
