@@ -43,6 +43,7 @@ const Login = () => {
         //     Alert.alert('Error', 'Something went wrong');
         //     console.error(error);
         // }
+        
     };
 
     return (
