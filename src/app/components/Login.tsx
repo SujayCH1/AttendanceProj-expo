@@ -1,11 +1,13 @@
 import { Button, StyleSheet, Text, TextInput, View, Alert } from 'react-native';
 import React, { useContext, useState } from 'react';
 import { UserContext } from '../context/UserContext';
+import { useRouter } from 'expo-router';
 
 const Login = ({ navigation }: { navigation: any }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const User = useContext(UserContext);
+    const router = useRouter()
 
     if (!User) {
         return <Text>User context not found</Text>;
@@ -31,9 +33,13 @@ const Login = ({ navigation }: { navigation: any }) => {
 
     const handleLogin = () => {
         if (user.userRole === "student") {
-            navigation.navigate('StudentView');
+            router.push({
+                pathname:'/components/StudentView'
+            });
         } else if (user.userRole === "faculty") {
-            navigation.navigate('TeacherView');
+            router.push({
+                pathname:'/components/TeacherView'
+            });
         } else {
             Alert.alert('Error', 'Invalid role. Please try again.');
         }
