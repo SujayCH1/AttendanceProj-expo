@@ -19,7 +19,7 @@ type UserProviderProps = {
 const defaultUser: UserType = {
     userEmail: "",
     userPassword: "",
-    userRole: "student",
+    userRole: "faculty",
     status: "notLoggedIn"
 };
 
