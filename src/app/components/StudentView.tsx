@@ -1,10 +1,16 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import React from 'react';
+import FeedBackForm from './FeedBackForm';
+import { useRouter } from 'expo-router';
 
-const StudentView = () => {
+
+const StudentView = ({ navigation }: any) => {
+
+  const router = useRouter();
+  
   return (
     <View style={styles.container}>
-      {/* <Text style={styles.header}>Student View</Text> */}
+      <Text style={styles.header}>Student View</Text>
 
       {/* Details Container */}
       <View style={styles.detailsContainer}>
@@ -18,6 +24,17 @@ const StudentView = () => {
           <Text style={styles.label}>Semester: </Text>5
         </Text>
       </View>
+
+      
+      {/* Button to navigate to Feedback Form */}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push({
+          pathname : '/components/FeedBackForm'
+        })}
+      >
+        <Text style={styles.buttonText}>Feedback Form</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -56,5 +73,19 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: 'bold',
     color: '#333',
+  },
+  button: {
+    backgroundColor: '#1e90ff',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 'auto',
+    marginBottom: 15
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
