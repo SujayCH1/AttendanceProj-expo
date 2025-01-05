@@ -1,90 +1,80 @@
-import { Button, StyleSheet, Text, TextInput, View, Alert } from 'react-native';
-import React, { useContext, useState } from 'react';
-import { UserContext } from '../context/UserContext';
-import { useRouter } from 'expo-router';
+import { Button, View } from "react-native";
+import { makeRedirectUri } from "expo-auth-session";
+import * as QueryParams from "expo-auth-session/build/QueryParams";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import { supabase } from "../utils/supabase";
+import { useRouter } from "expo-router";
 
-const Login = ({ navigation }: { navigation: any }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const User = useContext(UserContext);
-    const router = useRouter()
+WebBrowser.maybeCompleteAuthSession(); // required for web only
+const redirectTo = makeRedirectUri();
+console.log({redirectTo})
 
-    if (!User) {
-        return <Text>User context not found</Text>;
-    }
+const createSessionFromUrl = async (url: string) => {
+  const { params, errorCode } = QueryParams.getQueryParams(url);
 
-    const { user, setUser } = User;
+  if (errorCode) throw new Error(errorCode);
+  const { access_token, refresh_token } = params;
 
-    const HandleEmailChange = (newEmail: string) => {
-        setEmail(newEmail);
-        setUser(prevUser => ({
-            ...prevUser,
-            userEmail: newEmail
-        }));
-    };
+  if (!access_token) return;
 
-    const HandlePasswordChange = (newPassword: string) => {
-        setPassword(newPassword);
-        setUser(prevUser => ({
-            ...prevUser,
-            userPassword: newPassword
-        }));
-    };
-
-    const handleLogin = () => {
-        if (user.userRole === "student") {
-            router.push({
-                pathname:'/components/StudentView'
-            });
-        } else if (user.userRole === "faculty") {
-            router.push({
-                pathname:'/components/TeacherView'
-            });
-        } else {
-            Alert.alert('Error', 'Invalid role. Please try again.');
-        }
-    };
-
-    return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Login</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={HandleEmailChange}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                secureTextEntry
-                onChangeText={HandlePasswordChange}
-            />
-            <Button title="Login" onPress={handleLogin} />
-        </View>
-    );
+  const { data, error } = await supabase.auth.setSession({
+    access_token,
+    refresh_token,
+  });
+  if (error) throw error;
+  console.log(`session: ${data.session}`)
+  return data.session;
 };
 
-export default Login;
+const performOAuth = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "github",
+    options: {
+      redirectTo,
+    },
+  });
+  if (error) throw error;
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 16,
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 24,
-        textAlign: 'center',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        padding: 8,
-        marginBottom: 16,
-        borderRadius: 4,
-    },
-});
+  const res = await WebBrowser.openAuthSessionAsync(
+    data?.url ?? "",
+    redirectTo
+  );
+
+  if (res.type === "success") {
+    const { url } = res;
+    await createSessionFromUrl(url);
+  }
+};
+
+// const sendMagicLink = async () => {
+//   const { error } = await supabase.auth.signInWithOtp({
+//     email: "valid.email@supabase.io",
+//     options: {
+//       emailRedirectTo: redirectTo,
+//     },
+//   });
+
+//   if (error) throw error;
+//   // Email sent.
+// };
+
+export default function Login() {
+  // Handle linking into app from email app.
+  const url = Linking.useURL();
+  if (url) createSessionFromUrl(url);
+  console.log({url})
+
+  const router = useRouter()
+  const handlePress = () => {
+    router.push({
+        pathname: '/components/TeacherView'
+    })
+  }
+
+  return (
+    <View>
+      <Button onPress={() => performOAuth()} title="Sign in with Github" />
+    </View>
+  );
+}
