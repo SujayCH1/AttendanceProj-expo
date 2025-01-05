@@ -32,14 +32,19 @@ const performOAuth = async () => {
     provider: "github",
     options: {
       redirectTo,
+      skipBrowserRedirect: true,
     },
   });
   if (error) throw error;
+
+  console.log('data url: ', data.url)
 
   const res = await WebBrowser.openAuthSessionAsync(
     data?.url ?? "",
     redirectTo
   );
+
+  
 
   if (res.type === "success") {
     const { url } = res;
@@ -62,8 +67,9 @@ const performOAuth = async () => {
 export default function Login() {
   // Handle linking into app from email app.
   const url = Linking.useURL();
-  if (url) createSessionFromUrl(url);
   console.log({url})
+  if (url) createSessionFromUrl(url);
+ 
 
   const router = useRouter()
   const handlePress = () => {
