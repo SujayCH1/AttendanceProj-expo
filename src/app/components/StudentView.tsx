@@ -2,44 +2,34 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
-import { SessionContext } from '../context/SessionContext';
-
+import { fetchStudentInfo } from '../api/useGetData';
+import { UUIDContext } from '../context/uuidContext';
+import { UserContext } from '../context/UserContext';
 
 const StudentView = () => {
   const [currentUserID, setCurrentUserID] = useState(null);
+  const {UUID, setUUID} = useContext(UUIDContext);
+  const {user, setUser} = useContext(UserContext);
   const router = useRouter();
-  const {sessionStatus, setSessionStatus} = useContext(SessionContext) 
-
-  const fetchSessionData = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error fetching session:', error.message);
-        return null;
-      }
-
-      if (session) {
-        const userID = session.user.id;
-        console.log('userID:', userID);
-        return userID;
-      } else {
-        console.log('No active session');
-        return null;
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      return null;
-    }
-
-  };
+  const [studentInfo, setStudentInfo] = useState(null);
 
   useEffect(() => {
-    const initializeUser = async () => {
-      const userID = await fetchSessionData();
-      setCurrentUserID(userID);
-    };
-    initializeUser();
-  }, [session, setSession]);
+    // Run this effect only when user is logged in and has the role of 'student'
+    console.log('UUID: ', UUID);
+    console.log('user: ', {user});
+    if (user.userRole === "student" && user.status === "loggedIn") {
+      const fetchInfo = async () => {
+        const info = await fetchStudentInfo(UUID);
+        if (info) {
+          setStudentInfo(info);
+          console.log('Student Info assigned');
+        } else {
+          console.error('Student info assignment failed');
+        }
+      };
+      fetchInfo();
+    }
+  }, [UUID, user]); 
 
   return (
     <View style={styles.container}>
@@ -93,7 +83,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5, // For Android shadow
+    elevation: 5,
     marginVertical: 20,
   },
   detailText: {

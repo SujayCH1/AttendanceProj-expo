@@ -5,26 +5,30 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { supabase } from "../utils/supabase";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
+import { fetchSessionData } from "../api/useGetData";
+import { UUIDContext, UUIDType } from "../context/uuidContext";
+import { UserContext } from "../context/UserContext";
+import { UserType } from "../context/UserContext";
 
-// Required for web browser authentication
 WebBrowser.maybeCompleteAuthSession();
 
-// Create redirect URI with explicit scheme
 const redirectTo = makeRedirectUri({
-  scheme: 'myapp',
-  path: 'auth/callback'
+  scheme: "myapp",
+  path: "auth/callback",
 });
 
-const createSessionFromUrl = async (url: string) => {
+const createSessionFromUrl = async (
+  url: string,
+  setUUID: Dispatch<SetStateAction<UUIDType>>
+) => {
   try {
-    // Handle both # and ? parameters
-    const hasHashParams = url.includes('#');
-    const hasQueryParams = url.includes('?');
-    
+    const hasHashParams = url.includes("#");
+    const hasQueryParams = url.includes("?");
+
     let params: any = {};
     if (hasHashParams) {
-      const hashString = url.split('#')[1];
+      const hashString = url.split("#")[1];
       params = Object.fromEntries(new URLSearchParams(hashString));
     } else if (hasQueryParams) {
       const { params: queryParams, errorCode } = QueryParams.getQueryParams(url);
@@ -35,7 +39,7 @@ const createSessionFromUrl = async (url: string) => {
     const { access_token, refresh_token } = params;
 
     if (!access_token) {
-      console.log('No access token found in URL parameters');
+      console.log("No access token found in URL parameters");
       return;
     }
 
@@ -43,20 +47,35 @@ const createSessionFromUrl = async (url: string) => {
       access_token,
       refresh_token,
     });
-    
+
     if (error) throw error;
-    
-    console.log('Session created successfully');
+
+    console.log("Session created successfully");
+
+    if (data) {
+      const uuid = await fetchSessionData();
+      if (uuid) {
+        console.log('uuid assigned')
+        setUUID({UUID:uuid})
+      } else {
+        console.error('uuid assignment failed')
+      }
+    }
+
     return data.session;
   } catch (error) {
-    console.error('Error creating session:', error);
+    console.error("Error creating session:", error);
     throw error;
   }
 };
 
-const performOAuth = async (router: any) => {
+const performOAuth = async (
+  router: any,
+  setUUID: Dispatch<SetStateAction<UUIDType>>,
+  user: UserType
+) => {
   try {
-    console.log('Starting OAuth flow with redirect URI:', redirectTo);
+    console.log("Starting OAuth flow with redirect URI:", redirectTo);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "github",
@@ -69,7 +88,7 @@ const performOAuth = async (router: any) => {
     if (error) throw error;
     if (!data?.url) throw new Error("No authorization URL returned from Supabase");
 
-    console.log('Opening auth URL:', data.url);
+    console.log("Opening auth URL:", data.url);
 
     const result = await WebBrowser.openAuthSessionAsync(
       data.url,
@@ -80,77 +99,82 @@ const performOAuth = async (router: any) => {
       }
     );
 
-    console.log('Auth result:', result);
+    console.log("Auth result:", result);
 
-    if (result.type === 'success' && result.url) {
-      const session = await createSessionFromUrl(result.url);
+    if (result.type === "success" && result.url) {
+      const session = await createSessionFromUrl(result.url, setUUID);
       if (session) {
-        // Don't use dismissAuthSession, just navigate
-        router.push('/components/TeacherView');
+        if (user.userRole === 'student') {
+          router.push("/components/StudentView");
+        } else if (user.userRole === 'faculty') {
+          router.push("/components/TeacherView");
+        }
       }
     } else {
-      console.log('Authentication was cancelled or failed:', result.type);
+      console.log("Authentication was cancelled or failed:", result.type);
     }
   } catch (error) {
-    console.error('OAuth error:', error);
+    console.error("OAuth error:", error);
   }
 };
 
 function Login() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  
+  const { setUUID } = useContext(UUIDContext);
+  const { user } = useContext(UserContext);
+
   useEffect(() => {
     let mounted = true;
-    
-    // Handle deep linking
+
     const handleDeepLink = async (url: string) => {
       if (!mounted || !url) return;
-      
+
       try {
         setIsLoading(true);
-        const session = await createSessionFromUrl(url);
+        const session = await createSessionFromUrl(url, setUUID);
         if (session && mounted) {
-          router.push('/components/TeacherView');
+          router.push("/components/TeacherView");
         }
       } catch (error) {
-        console.error('Deep linking error:', error);
+        console.error("Deep linking error:", error);
       } finally {
         if (mounted) setIsLoading(false);
       }
     };
 
-    // Setup deep linking handler
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      console.log('Deep link URL:', url);
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      console.log("Deep link URL:", url);
       handleDeepLink(url);
     });
 
-    // Check for initial URL
     Linking.getInitialURL().then((url) => {
-      console.log('Initial URL:', url);
+      console.log("Initial URL:", url);
       if (url) handleDeepLink(url);
     });
 
-    // Cleanup
     return () => {
       mounted = false;
       subscription.remove();
     };
-  }, [router]);
+  }, [router, setUUID]);
+
+  
 
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      await performOAuth(router);
+      await performOAuth(router, setUUID, user);
     } finally {
       setIsLoading(false);
     }
   };
 
+  
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Button 
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Button
         onPress={handleLogin}
         title={isLoading ? "Signing in..." : "Sign in with Github"}
         disabled={isLoading}
@@ -159,5 +183,4 @@ function Login() {
   );
 }
 
-// Add default export
 export default Login;
