@@ -1,13 +1,42 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import React from 'react';
-import FeedBackForm from './FeedBackForm';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { supabase } from '../utils/supabase';
 
-
-const StudentView = ({ navigation }: any) => {
-
+const StudentView = () => {
+  const [currentUserID, setCurrentUserID] = useState(null);
   const router = useRouter();
-  
+
+  const fetchSessionData = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Error fetching session:', error.message);
+        return null;
+      }
+
+      if (session) {
+        const userID = session.user.id;
+        console.log('userID:', userID);
+        return userID;
+      } else {
+        console.log('No active session');
+        return null;
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const initializeUser = async () => {
+      const userID = await fetchSessionData();
+      setCurrentUserID(userID);
+    };
+    initializeUser();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Student View</Text>
@@ -25,13 +54,10 @@ const StudentView = ({ navigation }: any) => {
         </Text>
       </View>
 
-      
       {/* Button to navigate to Feedback Form */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push({
-          pathname : '/components/FeedBackForm'
-        })}
+        onPress={() => router.push('/components/FeedBackForm')}
       >
         <Text style={styles.buttonText}>Feedback Form</Text>
       </TouchableOpacity>
@@ -81,7 +107,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 'auto',
-    marginBottom: 15
+    marginBottom: 15,
   },
   buttonText: {
     color: '#fff',

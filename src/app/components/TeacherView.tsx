@@ -10,6 +10,7 @@ type SessionItem = {
   // Add other properties from your JSON
 }
 
+
 const TeacherView = () => {
   const router = useRouter();
   const currentCourse = "Internet Programming";

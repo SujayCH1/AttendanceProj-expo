@@ -15,14 +15,21 @@ const MarkAttendance = () => {
   const router = useRouter();
 
   const {
-    requestPermission
+    requestPermission,
+    advertise
   } = bleService()
 
   const handleMarkAttendance = async() => {
     const isPermissionsEnabled = await requestPermission();
+    if (isPermissionsEnabled) {
+      console.log("Checking Started");
+      advertise()
+    }
     
     console.log("Marking attendance...");
   };
+
+
 
   const handleBackPress = () => {
     Alert.alert(
