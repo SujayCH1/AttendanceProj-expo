@@ -17,14 +17,14 @@ const defaultSession: SessionType = {
     sessionStatus: "SessionNotActive",
 };
 
-export const UserContext = createContext<SessionContextType | undefined>(undefined);
+export const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const UserProvider = ({ children }: SessionProviderProps) => {
+export const SessionProvider = ({ children }: SessionProviderProps) => {
     const [sessionStatus, setSessionStatus] = useState<SessionType>(defaultSession);
 
     return (
-        <UserContext.Provider value={{ sessionStatus, setSessionStatus }}>
+        <SessionContext.Provider value={{ sessionStatus, setSessionStatus }}>
             {children}
-        </UserContext.Provider>
+        </SessionContext.Provider>
     );
 };

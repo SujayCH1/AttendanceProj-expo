@@ -1,11 +1,14 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
+import { SessionContext } from '../context/SessionContext';
+
 
 const StudentView = () => {
   const [currentUserID, setCurrentUserID] = useState(null);
   const router = useRouter();
+  const {sessionStatus, setSessionStatus} = useContext(SessionContext) 
 
   const fetchSessionData = async () => {
     try {
@@ -27,6 +30,7 @@ const StudentView = () => {
       console.error('Unexpected error:', err);
       return null;
     }
+
   };
 
   useEffect(() => {
@@ -35,7 +39,7 @@ const StudentView = () => {
       setCurrentUserID(userID);
     };
     initializeUser();
-  }, []);
+  }, [session, setSession]);
 
   return (
     <View style={styles.container}>
