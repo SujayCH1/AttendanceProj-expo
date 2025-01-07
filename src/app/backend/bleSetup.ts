@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PermissionsAndroid, Platform } from "react-native";
+import { Alert, PermissionsAndroid, Platform } from "react-native";
 import { NativeEventEmitter, NativeModules } from 'react-native';
 
 import {
@@ -97,7 +97,13 @@ export default function bleService() : BLEAPI{
         const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
 eventEmitter.addListener('foundUuid', (data) => {
 console.log('> foundUuid data : ', data)  
-
+if (data.uuid === uuids) {
+  Alert.alert(
+    'Attendance Marked',
+    'Attendance marked successfully!',
+    [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+  );
+}
 });
 eventEmitter.addListener('foundDevice', (data) =>
 console.log('> foundDevice data : ', data) // found device

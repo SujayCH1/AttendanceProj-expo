@@ -14,8 +14,8 @@
         if (session) {
           const userID = session.user.id;
           // currentUUID = userID //for dynamically fetching
-          currentUUID = '33333333-3333-3333-3333-333333333333' // for student temp
-          // currentUUID = '22222222-2222-2222-2222-222222222222' // for teacher temp
+          // currentUUID = '33333333-3333-3333-3333-333333333333' // for student temp
+          currentUUID = '22222222-2222-2222-2222-222222222222' // for teacher temp
           console.log('current uuid, updated from fetchSessionData: ', currentUUID)
           return userID;
         } else {
