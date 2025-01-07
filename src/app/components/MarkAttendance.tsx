@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
 
 type RouteParams = {
+  uuid: string,
   courseName: string;
   module: string;
   dividedContent: string;
@@ -22,7 +23,7 @@ const MarkAttendance = () => {
     const isPermissionsEnabled = await requestPermission();
     if (isPermissionsEnabled) {
       console.log("Checking Started");
-      advertise()
+      advertise(params.uuid)
     }
     
     console.log("Marking attendance...");

@@ -18,10 +18,9 @@ import {
 interface BLEAPI{
     requestPermission(): Promise<boolean>;
     scanForPeripherals() : void;
-    checking() : void;
+    checking(uuid : string) : void;
     connectToDevice (deviceId : Device) : Promise<void>;
-    advertise () : void;
-    checking () : void
+    advertise (uuid1 : string) : void;
 }
 
 export default function bleService() : BLEAPI{
@@ -89,11 +88,9 @@ export default function bleService() : BLEAPI{
           });
         }
       });
-      const checking = () => {
-        const uuids = [
-          '26f08670-ffdf-40eb-9067-78b9ae6e7919',
-        ];
-        scanStart(uuids.join()); 
+      const checking = (uuid : string) => {
+        const uuids = uuid;
+        // scanStart(uuids.join()); 
         const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
 eventEmitter.addListener('foundUuid', (data) => {
 console.log('> foundUuid data : ', data)   // found uuid
@@ -120,9 +117,9 @@ console.log('> log : ', log)               // log message
         }
       };
 
-      const advertise = async() =>{
+      const advertise = async(uuid1 : string) =>{
         console.log("REACHED IN advertise in ble.ts");
-        const uuid = '26f08670-ffdf-40eb-9067-78b9ae6e7919';
+        const uuid = uuid1;
         console.log(uuid);
         advertiseStart(uuid);
         console.log("ADVERTISING");
