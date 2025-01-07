@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { PermissionsAndroid, Platform } from "react-native";
+import { Alert, PermissionsAndroid, Platform } from "react-native";
 import { NativeEventEmitter, NativeModules } from 'react-native';
 
 import {
   advertiseStart,
   advertiseStop,
   scanStart,
+  scanStop,
 } from 'react-native-ble-phone-to-phone';
 import {
     BleError,
@@ -21,6 +22,7 @@ interface BLEAPI{
     checking(uuid : string) : void;
     connectToDevice (deviceId : Device) : Promise<void>;
     advertise (uuid1 : string) : void;
+    stopScan () : Promise<void>
 }
 
 export default function bleService() : BLEAPI{
@@ -90,10 +92,18 @@ export default function bleService() : BLEAPI{
       });
       const checking = (uuid : string) => {
         const uuids = uuid;
+        scanStart("22222222-2222-2222-2222-222222222222")
         // scanStart(uuids.join()); 
         const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
 eventEmitter.addListener('foundUuid', (data) => {
-console.log('> foundUuid data : ', data)   // found uuid
+console.log('> foundUuid data : ', data)  
+if (data.uuid === uuids) {
+  Alert.alert(
+    'Attendance Marked',
+    'Attendance marked successfully!',
+    [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+  );
+}
 });
 eventEmitter.addListener('foundDevice', (data) =>
 console.log('> foundDevice data : ', data) // found device
@@ -104,6 +114,10 @@ console.log('> error : ', error)           // error message
 eventEmitter.addListener('log', (log) =>
 console.log('> log : ', log)               // log message
 );
+      }
+
+      const stopScanning = () =>{
+        return scanStop()
       }
 
       const connectToDevice = async (device: Device) => {
@@ -131,5 +145,6 @@ console.log('> log : ', log)               // log message
         checking,
         connectToDevice,
         advertise,
+        stopScanning
     };
 }

@@ -31,13 +31,19 @@ const StudentView = ({ navigation }: any) => {
     fetchDataAsync();
   }, [fetchStudentInfo]);
   
+  function handleClick(): void {
+    if(studentInfo){
+    router.push({
+      pathname: '/components/StudentMarkingAttendance',
+    })
+  }
+}
+
   return (
     <TouchableOpacity
     style={styles.container}
     onPress={() =>
-      router.push({
-        pathname: '/components/StudentMarkingAttendance',
-      })
+      handleClick()
     }
   >
     <View style={styles.container}>
