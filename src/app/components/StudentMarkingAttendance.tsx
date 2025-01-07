@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Button, StyleSheet } from 'react-native';
+import { View, Button, StyleSheet, Alert } from 'react-native';
 import bleService from '../backend/bleSetup';
 import { UserContext } from '../context/UserContext';
 import { fetchStudentInfo } from '../api/useGetData';
+import { useLocalSearchParams } from 'expo-router';
+
 
 const StudentMarkingAttendance = () => {
   const [isPressed, setIsPressed] = useState(false);
@@ -32,13 +34,24 @@ const StudentMarkingAttendance = () => {
   const {
     requestPermission,
     checking,
+    stopScan
   } = bleService();
 
   // Function to handle button press
   const handlePress = () => {
-    requestPermission
-    // checking(uuid);
-    setIsPressed(!isPressed); // Toggle the button color
+      requestPermission
+      if(isPressed){
+        console.log("Scanned Stopped");
+        stopScan
+        setIsPressed(!isPressed)
+      }
+      else{
+        console.log("Scan started");
+        
+        checking("22222222-2222-2222-2222-222222222222");
+        setIsPressed(!isPressed)
+      }
+  
   };
 
   return (
