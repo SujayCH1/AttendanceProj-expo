@@ -4,19 +4,9 @@ import { useRouter } from 'expo-router';
 import { fetchStudentInfo } from '../api/useGetData';
 import { UserContext } from '../context/UserContext';
 
-type StudentInfo = {
-  admission_branch: string;
-  batch: string;
-  branch: string;
-  division: string;
-  dlo: string,
-  name: string;
-  prn: string;
-  semester: string;
-  user_id: string;
-}
 
-const StudentView = () => {
+const StudentView = ({ navigation }: any) => {
+
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState(null)
   const {user, setUser} = useContext(UserContext)
@@ -40,8 +30,16 @@ const StudentView = () => {
     };
     fetchDataAsync();
   }, [fetchStudentInfo]);
-
+  
   return (
+    <TouchableOpacity
+    style={styles.container}
+    onPress={() =>
+      router.push({
+        pathname: '/components/StudentMarkingAttendance',
+      })
+    }
+  >
     <View style={styles.container}>
       <Text style={styles.header}>Student View</Text>
 
@@ -58,14 +56,18 @@ const StudentView = () => {
         </Text>
       </View>
 
+      
       {/* Button to navigate to Feedback Form */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/components/FeedBackForm')}
+        onPress={() => router.push({
+          pathname : '/components/FeedBackForm'
+        })}
       >
         <Text style={styles.buttonText}>Feedback Form</Text>
       </TouchableOpacity>
     </View>
+    </TouchableOpacity>
   );
 };
 
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 5, // For Android shadow
     marginVertical: 20,
   },
   detailText: {
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 'auto',
-    marginBottom: 15,
+    marginBottom: 15
   },
   buttonText: {
     color: '#fff',
