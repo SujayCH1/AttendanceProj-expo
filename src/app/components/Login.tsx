@@ -7,7 +7,7 @@ import { supabase } from "../utils/supabase";
 import { useRouter } from "expo-router";
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import { fetchSessionData } from "../api/useGetData";
-import { UUIDContext, UUIDType } from "../context/uuidContext";
+import { UUIDContext, UUIDContextType } from "../context/uuidContext";
 import { UserContext } from "../context/UserContext";
 import { UserType } from "../context/UserContext";
 
@@ -20,7 +20,7 @@ const redirectTo = makeRedirectUri({
 
 const createSessionFromUrl = async (
   url: string,
-  setUUID: Dispatch<SetStateAction<UUIDType>>
+  setUUID: Dispatch<SetStateAction<string | null>>
 ) => {
   try {
     const hasHashParams = url.includes("#");
@@ -56,7 +56,6 @@ const createSessionFromUrl = async (
       const uuid = await fetchSessionData();
       if (uuid) {
         console.log('uuid assigned')
-        setUUID({UUID:uuid})
       } else {
         console.error('uuid assignment failed')
       }
@@ -71,7 +70,7 @@ const createSessionFromUrl = async (
 
 const performOAuth = async (
   router: any,
-  setUUID: Dispatch<SetStateAction<UUIDType>>,
+  setUUID: Dispatch<SetStateAction<string | null>>,
   user: UserType
 ) => {
   try {
@@ -134,7 +133,7 @@ function Login() {
         setIsLoading(true);
         const session = await createSessionFromUrl(url, setUUID);
         if (session && mounted) {
-          router.push("/components/TeacherView");
+          router.push("/components/StudentView");
         }
       } catch (error) {
         console.error("Deep linking error:", error);
@@ -169,8 +168,6 @@ function Login() {
       setIsLoading(false);
     }
   };
-
-  
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

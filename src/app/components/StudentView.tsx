@@ -3,33 +3,42 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
 import { fetchStudentInfo } from '../api/useGetData';
-import { UUIDContext } from '../context/uuidContext';
-import { UserContext } from '../context/UserContext';
+
+type StudentInfo = {
+  admission_branch: string;
+  batch: string;
+  branch: string;
+  division: string;
+  dlo: string,
+  name: string;
+  prn: string;
+  semester: string;
+  user_id: string;
+}
+
 
 const StudentView = () => {
   const [currentUserID, setCurrentUserID] = useState(null);
-  const {UUID, setUUID} = useContext(UUIDContext);
-  const {user, setUser} = useContext(UserContext);
   const router = useRouter();
-  const [studentInfo, setStudentInfo] = useState(null);
+  const [studentInfo, setStudentInfo] = useState(null)
 
   useEffect(() => {
-    // Run this effect only when user is logged in and has the role of 'student'
-    console.log('UUID: ', UUID);
-    console.log('user: ', {user});
-    if (user.userRole === "student" && user.status === "loggedIn") {
-      const fetchInfo = async () => {
-        const info = await fetchStudentInfo(UUID);
+    const fetchDataAsync = async () => {
+      try {
+        const info = await fetchStudentInfo();
         if (info) {
-          setStudentInfo(info);
-          console.log('Student Info assigned');
+          const studentData = 'info' in info ? info.info : info;
+          setStudentInfo(studentData);
+          console.log('student state: ', studentData);
         } else {
-          console.error('Student info assignment failed');
+          console.log('no student info');
         }
-      };
-      fetchInfo();
-    }
-  }, [UUID, user]); 
+      } catch (error) {
+        console.error('student data fetching failed:', error);
+      }
+    };
+    fetchDataAsync();
+  }, [fetchStudentInfo]);
 
   return (
     <View style={styles.container}>

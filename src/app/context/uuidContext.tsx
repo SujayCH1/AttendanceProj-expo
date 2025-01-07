@@ -1,21 +1,27 @@
 import { createContext, Dispatch, ReactNode, SetStateAction, useState } from "react";
 
-type UUIDContextType = {
+export type UUIDType = {
     UUID: string | null;
-    setUUID: Dispatch<SetStateAction<string | null>>;
+};
+
+export type UUIDContextType = {
+    UUID: UUIDType;
+    setUUID: Dispatch<SetStateAction<UUIDType>>;
 };
 
 type UUIDProviderProps = {
     children: ReactNode;
 };
 
+const defaultUUID: UUIDType = { UUID: null };
+
 export const UUIDContext = createContext<UUIDContextType>({
-    UUID: null,
+    UUID: defaultUUID,
     setUUID: () => {},
 });
 
 export const UUIDProvider = ({ children }: UUIDProviderProps) => {
-    const [UUID, setUUID] = useState<string | null>(null);
+    const [UUID, setUUID] = useState<UUIDType>(defaultUUID);
 
     return (
         <UUIDContext.Provider value={{ UUID, setUUID }}>

@@ -1,6 +1,7 @@
-  import { useContext } from "react";
+  import { useContext, useState } from "react";
   import { supabase } from "../utils/supabase";
-  import { UUIDContext } from "../context/uuidContext";
+
+  let currentUUID: string | null = null
 
   export const fetchSessionData = async () => {
       try {
@@ -12,7 +13,9 @@
 
         if (session) {
           const userID = session.user.id;
-          console.log('userID:', userID);
+          // currentUUID = userID
+          currentUUID = '33333333-3333-3333-3333-333333333333'
+          console.log('current uuid, updated from fetchSessionData: ', currentUUID)
           return userID;
         } else {
           console.log('No active session');
@@ -24,13 +27,13 @@
       }
   };
 
-  export const fetchStudentInfo = async (UUID: string) => {
+  export const fetchStudentInfo = async () => {
       try {
         // Fetch student information based on UUID
         const { data, error } = await supabase
           .from("student_info")
           .select("*")
-          .eq("user_id", UUID); 
+          .eq("user_id", currentUUID); 
     
         if (error) {
           console.error("Error fetching student info:", error.message);
@@ -38,7 +41,6 @@
         }
     
         if (data && data.length > 0) {
-          console.log("Student data:", data[0]);
           return data[0];
         } else {
           console.log("No student info found for the given UUID");
