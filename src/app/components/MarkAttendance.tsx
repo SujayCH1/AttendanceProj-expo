@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import React from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import bleService from '../backend/bleSetup';
 
 type RouteParams = {
   courseName: string;
@@ -8,13 +9,27 @@ type RouteParams = {
   dividedContent: string;
 }
 
+
 const MarkAttendance = () => {
   const params = useLocalSearchParams<RouteParams>();
   const router = useRouter();
 
-  const handleMarkAttendance = () => {
+  const {
+    requestPermission,
+    advertise
+  } = bleService()
+
+  const handleMarkAttendance = async() => {
+    const isPermissionsEnabled = await requestPermission();
+    if (isPermissionsEnabled) {
+      console.log("Checking Started");
+      advertise()
+    }
+    
     console.log("Marking attendance...");
   };
+
+
 
   const handleBackPress = () => {
     Alert.alert(
