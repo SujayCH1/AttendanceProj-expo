@@ -9,7 +9,7 @@ type SessionItem = {
   'Course Name': string;
   Module: string;
   'Divided Content': string;
-  // Add other properties from your JSON
+  // Add other properties 
 }
 
 
@@ -46,8 +46,7 @@ const TeacherView = () => {
       params: {
         courseName: session['Course Name'],
         module: session.Module,
-        dividedContent: session['Divided Content']
-        // Add other needed properties
+        dividedContent: session['Divided Content'],
       }
     });
   };
