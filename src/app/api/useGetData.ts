@@ -13,8 +13,9 @@
 
         if (session) {
           const userID = session.user.id;
-          // currentUUID = userID
-          currentUUID = '33333333-3333-3333-3333-333333333333'
+          // currentUUID = userID //for dynamically fetching
+          // currentUUID = '33333333-3333-3333-3333-333333333333' // for student temp
+          currentUUID = '22222222-2222-2222-2222-222222222222' // for teacher temp
           console.log('current uuid, updated from fetchSessionData: ', currentUUID)
           return userID;
         } else {
@@ -53,6 +54,25 @@
   };
 
   export const fetchFacultyInfo = async () => {
-      // Implement the faculty data fetching logic here
+      try {
+        const {data, error} = await supabase
+        .from("faculty")
+        .select("*")
+        .eq("user_id", currentUUID)
+
+        if (error) {
+          console.log ("Error fetching teacher info:", error.message)
+        }
+
+        if (data && data.length > 0) {
+          return data[0];
+        } else {
+          console.log("No student info found for the given UUID");
+          return null;
+        }
+      } catch (err) {
+        console.error("Unexcpected error: ", err)
+        return null
+      }
   };
 

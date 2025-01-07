@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { supabase } from '../utils/supabase';
 import { fetchStudentInfo } from '../api/useGetData';
+import { UserContext } from '../context/UserContext';
 
 type StudentInfo = {
   admission_branch: string;
@@ -16,25 +16,26 @@ type StudentInfo = {
   user_id: string;
 }
 
-
 const StudentView = () => {
-  const [currentUserID, setCurrentUserID] = useState(null);
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState(null)
+  const {user, setUser} = useContext(UserContext)
 
   useEffect(() => {
     const fetchDataAsync = async () => {
-      try {
-        const info = await fetchStudentInfo();
-        if (info) {
-          const studentData = 'info' in info ? info.info : info;
-          setStudentInfo(studentData);
-          console.log('student state: ', studentData);
-        } else {
-          console.log('no student info');
+      if(user.userRole === 'student') {
+        try {
+          const info = await fetchStudentInfo();
+          if (info) {
+            const studentData = 'info' in info ? info.info : info;
+            setStudentInfo(studentData);
+            console.log('student state: ', studentData);
+          } else {
+            console.log('no student info');
+          }
+        } catch (error) {
+          console.error('student data fetching failed:', error);
         }
-      } catch (error) {
-        console.error('student data fetching failed:', error);
       }
     };
     fetchDataAsync();

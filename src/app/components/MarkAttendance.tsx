@@ -9,7 +9,6 @@ type RouteParams = {
   dividedContent: string;
 }
 
-
 const MarkAttendance = () => {
   const params = useLocalSearchParams<RouteParams>();
   const router = useRouter();
@@ -28,7 +27,6 @@ const MarkAttendance = () => {
     
     console.log("Marking attendance...");
   };
-
 
 
   const handleBackPress = () => {

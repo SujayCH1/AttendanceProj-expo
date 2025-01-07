@@ -1,7 +1,9 @@
 import { FlatList, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import SessionPlan from '../components/alpha_data.json';
 import { useRouter } from 'expo-router';
+import { UserContext } from '../context/UserContext';
+import { fetchFacultyInfo } from '../api/useGetData';
 
 type SessionItem = {
   'Course Name': string;
@@ -15,6 +17,28 @@ const TeacherView = () => {
   const router = useRouter();
   const currentCourse = "Internet Programming";
   const filteredSessionPlan = SessionPlan.filter((session) => session['Course Name'] === currentCourse);
+  const {user, setUser} = useContext(UserContext)
+  const [facultyInfo, setFacultyInfo] = useState(null)
+
+  useEffect(() => {
+      const fetchDataAsync = async () => {
+        if(user.userRole === 'faculty') {
+          try {
+            const info = await fetchFacultyInfo();
+            if (info) {
+              const studentData = 'info' in info ? info.info : info;
+              setFacultyInfo(studentData);
+              console.log('faculty state: ', studentData);
+            } else {
+              console.log('no faculty info');
+            }
+          } catch (error) {
+            console.error('faculty  data fetching failed:', error);
+          }
+        }
+      };
+      fetchDataAsync();
+    }, [fetchFacultyInfo]);
 
   const handleSessionClick = (session: SessionItem) => {
     router.push({
