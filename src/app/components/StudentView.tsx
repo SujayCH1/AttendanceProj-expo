@@ -19,7 +19,7 @@ const StudentView = ({ navigation }: any) => {
           if (info) {
             const studentData = 'info' in info ? info.info : info;
             setStudentInfo(studentData);
-            console.log('student state: ', studentData);
+            console.log('student state in Student view: ', studentData);
           } else {
             console.log('no student info');
           }

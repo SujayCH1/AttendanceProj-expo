@@ -40,15 +40,6 @@ const TeacherView = () => {
       fetchDataAsync();
     }, [fetchFacultyInfo]);
 
-<<<<<<< HEAD
-  const handleSessionClick = (session: SessionItem) => {
-    router.push({
-      pathname: '/components/MarkAttendance',
-      params: {
-        courseName: session['Course Name'],
-        module: session.Module,
-        dividedContent: session['Divided Content'],
-=======
     const handleSessionClick = (session: SessionItem) => {
       if (facultyInfo) {
         router.push({
@@ -62,7 +53,6 @@ const TeacherView = () => {
         });
       } else {
         console.warn('UUID not found in facultyInfo');
->>>>>>> 517539855666034ca3b9f9665fe434d102141e02
       }
     };
     
