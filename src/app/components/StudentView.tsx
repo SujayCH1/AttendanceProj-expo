@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { fetchStudentInfo } from '../api/useGetData';
+import { fetchStudentInfo, getFacultyIdsInSV } from '../api/useGetData';
 import { UserContext } from '../context/UserContext';
 
 
@@ -9,11 +9,12 @@ const StudentView = ({ navigation }: any) => {
 
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState(null)
-  const {user, setUser} = useContext(UserContext)
+  const { user, setUser } = useContext(UserContext)
+  const [TUUID, setTUUID] = useState(null)
 
   useEffect(() => {
     const fetchDataAsync = async () => {
-      if(user.userRole === 'student') {
+      if (user.userRole === 'student') {
         try {
           const info = await fetchStudentInfo();
           if (info) {
@@ -30,49 +31,77 @@ const StudentView = ({ navigation }: any) => {
     };
     fetchDataAsync();
   }, [fetchStudentInfo]);
-  
+
+  useEffect(() => {
+    const fetchTUUID = async () => {
+      if (studentInfo) {
+
+        try {
+          const uuidResponse = await getFacultyIdsInSV(studentInfo);
+          if (uuidResponse) {
+            const uuids = 'data' in uuidResponse ? uuidResponse.data : uuidResponse;
+            setTUUID(uuids);
+          } else {
+            console.log('no faculty uuids');
+          }
+        } catch (error) {
+          console.error('Faculty UUID fetching failed:', error);
+        }
+      }
+    }
+    fetchTUUID();
+  }, [studentInfo,getFacultyIdsInSV]);
+
+
+  useEffect(() => {
+    console.log('faculty UUIDS fetched on student side:', TUUID);
+  }, [TUUID]);
+
   function handleClick(): void {
-    if(studentInfo){
-    router.push({
-      pathname: '/components/StudentMarkingAttendance',
-    })
+    if (studentInfo) {
+      router.push({
+        pathname: '/components/StudentMarkingAttendance',
+        params: {
+          facultyUUIDS: TUUID,
+        },
+      })
+    }
   }
-}
 
   return (
     <TouchableOpacity
-    style={styles.container}
-    onPress={() =>
-      handleClick()
-    }
-  >
-    <View style={styles.container}>
-      <Text style={styles.header}>Student View</Text>
+      style={styles.container}
+      onPress={() =>
+        handleClick()
+      }
+    >
+      <View style={styles.container}>
+        <Text style={styles.header}>Student View</Text>
 
-      {/* Details Container */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.detailText}>
-          <Text style={styles.label}>Teacher Name: </Text>Mr. John Doe
-        </Text>
-        <Text style={styles.detailText}>
-          <Text style={styles.label}>Subject: </Text>Mathematics
-        </Text>
-        <Text style={styles.detailText}>
-          <Text style={styles.label}>Semester: </Text>5
-        </Text>
+        {/* Details Container */}
+        <View style={styles.detailsContainer}>
+          <Text style={styles.detailText}>
+            <Text style={styles.label}>Teacher Name: </Text>Mr. John Doe
+          </Text>
+          <Text style={styles.detailText}>
+            <Text style={styles.label}>Subject: </Text>Mathematics
+          </Text>
+          <Text style={styles.detailText}>
+            <Text style={styles.label}>Semester: </Text>5
+          </Text>
+        </View>
+
+
+        {/* Button to navigate to Feedback Form */}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push({
+            pathname: '/components/FeedBackForm'
+          })}
+        >
+          <Text style={styles.buttonText}>Feedback Form</Text>
+        </TouchableOpacity>
       </View>
-
-      
-      {/* Button to navigate to Feedback Form */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push({
-          pathname : '/components/FeedBackForm'
-        })}
-      >
-        <Text style={styles.buttonText}>Feedback Form</Text>
-      </TouchableOpacity>
-    </View>
     </TouchableOpacity>
   );
 };
