@@ -1,41 +1,44 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { supabase } from '../utils/supabase';
+import { fetchStudentInfo } from '../api/useGetData';
+
+type StudentInfo = {
+  admission_branch: string;
+  batch: string;
+  branch: string;
+  division: string;
+  dlo: string,
+  name: string;
+  prn: string;
+  semester: string;
+  user_id: string;
+}
+
 
 const StudentView = () => {
   const [currentUserID, setCurrentUserID] = useState(null);
   const router = useRouter();
-
-  const fetchSessionData = async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error fetching session:', error.message);
-        return null;
-      }
-
-      if (session) {
-        const userID = session.user.id;
-        console.log('userID:', userID);
-        return userID;
-      } else {
-        console.log('No active session');
-        return null;
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      return null;
-    }
-  };
+  const [studentInfo, setStudentInfo] = useState(null)
 
   useEffect(() => {
-    const initializeUser = async () => {
-      const userID = await fetchSessionData();
-      setCurrentUserID(userID);
+    const fetchDataAsync = async () => {
+      try {
+        const info = await fetchStudentInfo();
+        if (info) {
+          const studentData = 'info' in info ? info.info : info;
+          setStudentInfo(studentData);
+          console.log('student state: ', studentData);
+        } else {
+          console.log('no student info');
+        }
+      } catch (error) {
+        console.error('student data fetching failed:', error);
+      }
     };
-    initializeUser();
-  }, []);
+    fetchDataAsync();
+  }, [fetchStudentInfo]);
 
   return (
     <View style={styles.container}>
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5, // For Android shadow
+    elevation: 5,
     marginVertical: 20,
   },
   detailText: {

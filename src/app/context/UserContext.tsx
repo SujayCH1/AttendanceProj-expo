@@ -1,13 +1,12 @@
 import { createContext, Dispatch, ReactNode, SetStateAction, useState } from "react";
 
-type UserType = {
-    userEmail: string;
-    userPassword: string;
+export type UserType = {
+    uuid: string;
     userRole: "student" | "faculty" | undefined;
-    status: "loggedIn" | "notLoggedIn"
+    status: "loggedIn" | "notLoggedIn";
 };
 
-type UserContextType = {
+export type UserContextType = {
     user: UserType;
     setUser: Dispatch<SetStateAction<UserType>>;
 };
@@ -17,13 +16,15 @@ type UserProviderProps = {
 };
 
 const defaultUser: UserType = {
-    userEmail: "",
-    userPassword: "",
+    uuid: "",
     userRole: "student",
     status: "notLoggedIn"
 };
 
-export const UserContext = createContext<UserContextType | undefined>(undefined);
+export const UserContext = createContext<UserContextType>({
+    user: defaultUser,
+    setUser: () => {},
+}); // Provide default value instead of undefined
 
 export const UserProvider = ({ children }: UserProviderProps) => {
     const [user, setUser] = useState<UserType>(defaultUser);
@@ -34,4 +35,3 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         </UserContext.Provider>
     );
 };
-
