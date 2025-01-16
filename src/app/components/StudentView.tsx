@@ -40,7 +40,8 @@ const StudentView = ({ navigation }: any) => {
           const uuidResponse = await getFacultyIdsInSV(studentInfo);
           if (uuidResponse) {
             const uuids = 'data' in uuidResponse ? uuidResponse.data : uuidResponse;
-            setTUUID(uuids);
+            console.log("uuids",uuids);
+            setTUUID(uuidResponse);
           } else {
             console.log('no faculty uuids');
           }

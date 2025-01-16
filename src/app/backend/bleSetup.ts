@@ -19,7 +19,7 @@ import {
 interface BLEAPI{
     requestPermission(): Promise<boolean>;
     scanForPeripherals() : void;
-    checking(uuid : string) : void;
+    checking(uuid : Array<string>) : void;
     connectToDevice (deviceId : Device) : Promise<void>;
     advertise (uuid1 : string) : void;
     stopScan () : Promise<void>
@@ -90,20 +90,19 @@ export default function bleService() : BLEAPI{
           });
         }
       });
-      const checking = (uuid : string) => {
-        const uuids = uuid;
-        scanStart("22222222-2222-2222-2222-222222222222")
-        // scanStart(uuids.join()); 
+      const checking = (uuid :string) => {
+        const uuids = Array.isArray(uuid) ? uuid.join() : "";
+        const uuidsArray = uuid.split(',');
+        scanStart(uuidsArray.join()); 
         const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
 eventEmitter.addListener('foundUuid', (data) => {
 console.log('> foundUuid data : ', data)  
-if (data.uuid === uuids) {
   Alert.alert(
     'Attendance Marked',
     'Attendance marked successfully!',
     [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
   );
-}
+
 });
 eventEmitter.addListener('foundDevice', (data) =>
 console.log('> foundDevice data : ', data) // found device
