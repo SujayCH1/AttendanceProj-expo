@@ -1,11 +1,10 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
-import { advertiseStop } from 'react-native-ble-phone-to-phone';
 
 type RouteParams = {
-  uuid: string,
+  uuid: string;
   courseName: string;
   module: string;
   dividedContent: string;
@@ -14,43 +13,100 @@ type RouteParams = {
 const MarkAttendance = () => {
   const params = useLocalSearchParams<RouteParams>();
   const router = useRouter();
-
-  const { requestPermission, advertise } = bleService();
-
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const ble = bleService();
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (isSessionActive) {
+        ble.stopAdvertising();
+        ble.cleanup();
+      }
+    };
+  }, [isSessionActive]);
 
   const handleMarkAttendance = async () => {
-    if (!isSessionActive) {
-      const isPermissionsEnabled = await requestPermission();
-      if (isPermissionsEnabled) {
-        console.log("Checking Started");
-        console.log(params.uuid);
-        advertise(params.uuid);
-      }
-      console.log("Session started...");
-    } else {
-      advertiseStop();
-      console.log("Session stopped...");
-    }
+    try {
+      if (!isSessionActive) {
+        const hasPermissions = await ble.requestPermissions();
+        if (!hasPermissions) {
+          Alert.alert(
+            "Permission Error",
+            "Required Bluetooth permissions were not granted.",
+            [{ text: "OK" }]
+          );
+          return;
+        }
 
-    setIsSessionActive(!isSessionActive);
+        await ble.startAdvertising(params.uuid);
+        setIsSessionActive(true);
+        Alert.alert(
+          "Session Started",
+          "Students can now mark their attendance.",
+          [{ text: "OK" }]
+        );
+      } else {
+        await ble.stopAdvertising();
+        setIsSessionActive(false);
+        Alert.alert(
+          "Session Ended",
+          "Attendance marking session has ended.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error('Error in attendance session:', error);
+      Alert.alert(
+        "Error",
+        "There was an error managing the attendance session. Please try again.",
+        [{ text: "OK" }]
+      );
+      setIsSessionActive(false);
+    }
   };
 
   const handleBackPress = () => {
-    Alert.alert(
-      "Confirm Navigation",
-      "Are you sure you want to go back? Any unsaved changes will be lost.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Yes, go back",
-          onPress: () => router.back(),
-        },
-      ]
-    );
+    if (isSessionActive) {
+      Alert.alert(
+        "Active Session",
+        "You have an active attendance session. Do you want to end it and go back?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "End Session & Go Back",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await ble.stopAdvertising();
+                ble.cleanup();
+                router.back();
+              } catch (error) {
+                console.error('Error cleaning up:', error);
+              }
+            }
+          }
+        ]
+      );
+    } else {
+      Alert.alert(
+        "Confirm Navigation",
+        "Are you sure you want to go back?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Go Back",
+            onPress: () => router.back()
+          }
+        ]
+      );
+    }
   };
 
   return (
@@ -70,7 +126,10 @@ const MarkAttendance = () => {
         <Text style={styles.dividedContent}>Content: {params.dividedContent}</Text>
 
         <View style={styles.attendanceSection}>
-          <Text style={styles.sectionTitle}>Attendance Details</Text>
+          <Text style={styles.sectionTitle}>Attendance Session</Text>
+          <Text style={styles.sessionStatus}>
+            Status: {isSessionActive ? 'Active' : 'Inactive'}
+          </Text>
         </View>
 
         <TouchableOpacity 
@@ -78,14 +137,14 @@ const MarkAttendance = () => {
           onPress={handleMarkAttendance}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>{isSessionActive ? 'Stop Session' : 'Start Session'}</Text>
+          <Text style={styles.buttonText}>
+            {isSessionActive ? 'Stop Session' : 'Start Session'}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
-
-export default MarkAttendance;
 
 const styles = StyleSheet.create({
   container: {
@@ -145,6 +204,11 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
   },
+  sessionStatus: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+  },
   button: {
     backgroundColor: '#007AFF',
     paddingVertical: 12,
@@ -167,3 +231,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default MarkAttendance;
