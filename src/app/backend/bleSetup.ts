@@ -22,7 +22,8 @@ interface BLEAPI{
     checking(uuid : Array<string>) : void;
     connectToDevice (deviceId : Device) : Promise<void>;
     advertise (uuid1 : string) : void;
-    stopScan () : Promise<void>
+    stopScan () : Promise<void>;
+    advertiseStop () : Promise<void>
 }
 
 export default function bleService() : BLEAPI{
@@ -138,12 +139,18 @@ console.log('> log : ', log)               // log message
         console.log("ADVERTISING");
         
       }
+      const advertiseStop = async() =>{
+        console.log("ADVERTISING STOPP");
+        advertiseStop();
+        
+      }
     return{
         requestPermission,
         scanForPeripherals,
         checking,
         connectToDevice,
         advertise,
-        stopScanning
+        stopScanning,
+        advertiseStop
     };
 }
