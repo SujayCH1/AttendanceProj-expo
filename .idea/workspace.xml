@@ -5,8 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fe47bc14-a22c-49e9-9a3e-6596e57ef447" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/backend/bleSetup.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/backend/bleSetup.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/MarkAttendance.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/components/MarkAttendance.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/components/StudentMarkingAttendance.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/components/StudentMarkingAttendance.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/context/UserContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/context/UserContext.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
