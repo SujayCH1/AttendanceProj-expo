@@ -8,27 +8,27 @@ import {
   scanStart,
   scanStop,
 } from 'react-native-ble-phone-to-phone';
-import {
-    BleError,
-    BleManager,
-    Characteristic,
-    Device,
-  } from "react-native-ble-plx";
+// import {
+//     BleError,
+//     BleManager,
+//     Characteristic,
+//     Device,
+//   } from "react-native-ble-plx";
 
 
 interface BLEAPI{
     requestPermission(): Promise<boolean>;
     scanForPeripherals() : void;
     checking(uuid : Array<string>) : void;
-    connectToDevice (deviceId : Device) : Promise<void>;
+    // connectToDevice (deviceId : Device) : Promise<void>;
     advertise (uuid1 : string) : void;
     stopScan () : Promise<void>
 }
 
 export default function bleService() : BLEAPI{
-  const bleManager = useMemo(() => new BleManager(), []);
-  const [allDevices, setAllDevices] = useState<Device[]>([]);
-  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+  // const bleManager = useMemo(() => new BleManager(), []);
+  // const [allDevices, setAllDevices] = useState<Device[]>([]);
+  // const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
 
 
     const requestPermission = async () =>{
@@ -71,27 +71,26 @@ export default function bleService() : BLEAPI{
             bleAdvertising === "granted"
           );
     }
-    const isDuplicteDevice = (devices: Device[], nextDevice: Device) =>
-      devices.findIndex((device) => nextDevice.id === device.id) > -1;
+    // const isDuplicteDevice = (devices: Device[], nextDevice: Device) =>
+    //   devices.findIndex((device) => nextDevice.id === device.id) > -1;
 
-    const scanForPeripherals = () =>
-      bleManager.startDeviceScan(null, null, (error, device) => {
-        if (error) {
-          console.log(error);
-        }
-        console.log(device?.name);
+    // const scanForPeripherals = () =>
+    //   bleManager.startDeviceScan(null, null, (error, device) => {
+    //     if (error) {
+    //       console.log(error);
+    //     }
+    //     console.log(device?.name);
         
-        if (device && device.name?.includes("CorSense")) {
-          setAllDevices((prevState: Device[]) => {
-            if (!isDuplicteDevice(prevState, device)) {
-              return [...prevState, device];
-            }
-            return prevState;
-          });
-        }
-      });
+    //     if (device && device.name?.includes("CorSense")) {
+    //       setAllDevices((prevState: Device[]) => {
+    //         if (!isDuplicteDevice(prevState, device)) {
+    //           return [...prevState, device];
+    //         }
+    //         return prevState;
+    //       });
+    //     }
+    //   });
       const checking = (uuid :string) => {
-        const uuids = Array.isArray(uuid) ? uuid.join() : "";
         const uuidsArray = uuid.split(',');
         scanStart(uuidsArray.join()); 
         const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
@@ -119,16 +118,16 @@ console.log('> log : ', log)               // log message
         return scanStop()
       }
 
-      const connectToDevice = async (device: Device) => {
-        try {
-          const deviceConnection = await bleManager.connectToDevice(device.id);
-          setConnectedDevice(deviceConnection);
-          await deviceConnection.discoverAllServicesAndCharacteristics();
-          bleManager.stopDeviceScan();
-        } catch (e) {
-          console.log("FAILED TO CONNECT", e);
-        }
-      };
+      // const connectToDevice = async (device: Device) => {
+      //   try {
+      //     const deviceConnection = await bleManager.connectToDevice(device.id);
+      //     setConnectedDevice(deviceConnection);
+      //     await deviceConnection.discoverAllServicesAndCharacteristics();
+      //     bleManager.stopDeviceScan();
+      //   } catch (e) {
+      //     console.log("FAILED TO CONNECT", e);
+      //   }
+      // };
 
       const advertise = async(uuid1 : string) =>{
         console.log("REACHED IN advertise in ble.ts");
@@ -140,9 +139,7 @@ console.log('> log : ', log)               // log message
       }
     return{
         requestPermission,
-        scanForPeripherals,
         checking,
-        connectToDevice,
         advertise,
         stopScanning
     };
