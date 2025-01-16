@@ -1,104 +1,146 @@
-import { PermissionsAndroid, Alert } from "react-native";
+// bleService.ts
+import { PermissionsAndroid, Alert, Platform } from "react-native";
 import { NativeEventEmitter, NativeModules } from "react-native";
 import { advertiseStart, advertiseStop, scanStart, scanStop } from "react-native-ble-phone-to-phone";
 
+interface BLEListeners {
+  foundUuid?: ReturnType<typeof NativeEventEmitter.prototype.addListener>;
+  foundDevice?: ReturnType<typeof NativeEventEmitter.prototype.addListener>;
+  error?: ReturnType<typeof NativeEventEmitter.prototype.addListener>;
+  log?: ReturnType<typeof NativeEventEmitter.prototype.addListener>;
+}
+
 interface BLEAPI {
-  requestPermission(): Promise<boolean>;
-  checking(uuid: string): void;
-  advertise(uuid1: string): void;
-  stopScanning(): Promise<void>;
-  advertiseStop(): Promise<void>;
+  requestPermissions(): Promise<boolean>;
+  startScanning(uuids: string | string[]): void;
+  stopScanning(): void;
+  startAdvertising(uuid: string): void;
+  stopAdvertising(): void;
+  cleanup(): void;
 }
 
 export default function bleService(): BLEAPI {
-  const requestPermission = async () => {
-    const bluetoothScanPermission = await PermissionsAndroid.request(
+  let eventEmitter: NativeEventEmitter;
+  let listeners: BLEListeners = {};
+
+  const PERMISSIONS = {
+    android: [
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-      {
-        title: "Location Permission",
-        message: "Bluetooth Low Energy requires Location",
-        buttonPositive: "OK",
-      }
-    );
-    const bluetoothConnectPermission = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-      {
-        title: "Location Permission",
-        message: "Bluetooth Low Energy requires Location",
-        buttonPositive: "OK",
-      }
-    );
-    const fineLocationPermission = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      {
-        title: "Location Permission",
-        message: "Bluetooth Low Energy requires Location",
-        buttonPositive: "OK",
-      }
-    );
-    const bleAdvertising = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-      {
-        title: "Advertise Permission",
-        message: "Bluetooth Low Energy requires Location",
-        buttonPositive: "OK",
-      }
-    );
-    return (
-      bluetoothScanPermission === "granted" &&
-      bluetoothConnectPermission === "granted" &&
-      fineLocationPermission === "granted" &&
-      bleAdvertising === "granted"
-    );
+    ]
   };
 
-  const checking = (uuid: string) => {
-    const uuidsArray = uuid.split(",");
-    scanStart(uuidsArray.join());
-    const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
+  const requestPermissions = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') {
+      console.warn('Permissions only implemented for Android');
+      return true;
+    }
 
-    eventEmitter.addListener("foundUuid", (data) => {
-      console.log("> foundUuid data : ", data);
-      Alert.alert(
-        "Attendance Marked",
-        "Attendance marked successfully!",
-        [{ text: "OK", onPress: () => console.log("OK Pressed") }]
+    try {
+      const results = await Promise.all(
+        PERMISSIONS.android.map(permission =>
+          PermissionsAndroid.request(permission, {
+            title: "Bluetooth Permissions",
+            message: "This app requires Bluetooth permissions to function properly",
+            buttonPositive: "OK",
+          })
+        )
       );
+
+      return results.every(result => result === PermissionsAndroid.RESULTS.GRANTED);
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      return false;
+    }
+  };
+
+  const setupEventListeners = () => {
+    if (!eventEmitter) {
+      eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
+    }
+
+    // Remove existing listeners before adding new ones
+    cleanup();
+
+    listeners = {
+      foundUuid: eventEmitter.addListener("foundUuid", (data) => {
+        console.log("Found UUID:", data);
+        Alert.alert(
+          "Attendance Marked",
+          "Your attendance has been recorded successfully!",
+          [{ text: "OK" }]
+        );
+      }),
+
+      foundDevice: eventEmitter.addListener("foundDevice", (data) => {
+        console.log("Found Device:", data);
+      }),
+
+      error: eventEmitter.addListener("error", (error) => {
+        console.error("BLE Error:", error);
+        Alert.alert(
+          "Bluetooth Error",
+          "There was an error with the Bluetooth connection. Please try again.",
+          [{ text: "OK" }]
+        );
+      }),
+
+      log: eventEmitter.addListener("log", (log) => {
+        console.log("BLE Log:", log);
+      })
+    };
+  };
+
+  const startScanning = (uuids: string | string[]): void => {
+    setupEventListeners();
+    const uuidString = Array.isArray(uuids) ? uuids.join(',') : uuids;
+    console.log('Starting scan for UUIDs:', uuidString);
+    scanStart(uuidString);
+  };
+
+  const stopScanning = (): void => {
+    console.log('Stopping scan');
+    scanStop();
+  };
+
+  const startAdvertising = async (uuid: string): void => {
+    try {
+      console.log('Starting advertisement with UUID:', uuid);
+      await advertiseStart(uuid);
+    } catch (error) {
+      console.error('Error starting advertisement:', error);
+      Alert.alert(
+        "Error",
+        "Failed to start Bluetooth advertising. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  const stopAdvertising = async (): void => {
+    try {
+      console.log('Stopping advertisement');
+      await advertiseStop();
+    } catch (error) {
+      console.error('Error stopping advertisement:', error);
+    }
+  };
+
+  const cleanup = (): void => {
+    Object.values(listeners).forEach(listener => {
+      listener?.remove();
     });
-
-    eventEmitter.addListener("foundDevice", (data) =>
-      console.log("> foundDevice data : ", data)
-    );
-    eventEmitter.addListener("error", (error) =>
-      console.log("> error : ", error)
-    );
-    eventEmitter.addListener("log", (log) =>
-      console.log("> log : ", log)
-    );
-  };
-
-  const stopScanning = () => {
-    return scanStop();
-  };
-
-  const advertise = async (uuid1: string) => {
-    console.log("REACHED IN advertise in ble.ts");
-    const uuid = uuid1;
-    console.log(uuid);
-    advertiseStart(uuid);
-    console.log("ADVERTISING");
-  };
-
-  const advertiseStop = async () => {
-    console.log("ADVERTISING STOPP");
-    advertiseStop();
+    listeners = {};
   };
 
   return {
-    requestPermission,
-    checking,
-    advertise,
+    requestPermissions,
+    startScanning,
     stopScanning,
-    advertiseStop,
+    startAdvertising,
+    stopAdvertising,
+    cleanup,
   };
 }

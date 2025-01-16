@@ -1,80 +1,184 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Button, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Alert } from 'react-native';
 import bleService from '../backend/bleSetup';
 import { UserContext } from '../context/UserContext';
 import { fetchStudentInfo } from '../api/useGetData';
-import { useLocalSearchParams} from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 
 const StudentMarkingAttendance = () => {
-  const [isPressed, setIsPressed] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [studentInfo, setStudentInfo] = useState(null);
-  const { user, setUser } = useContext(UserContext)
-  const params = useLocalSearchParams()
-  const FUUID = params.facultyUUIDS
+  const { user } = useContext(UserContext);
+  const params = useLocalSearchParams();
+  const router = useRouter();
+  const facultyUUIDs = params.facultyUUIDS as string;
+  const ble = bleService();
 
   useEffect(() => {
-    const fetchDataAsync = async () => {
+    const fetchData = async () => {
       if (user.userRole === 'student') {
         try {
           const info = await fetchStudentInfo();
           if (info) {
             const studentData = 'info' in info ? info.info : info;
             setStudentInfo(studentData);
-            console.log('student state in Marking attendnace: ', studentData);
+            console.log('Student info loaded:', studentData);
           } else {
-            console.log('no student info');
+            throw new Error('No student info received');
           }
         } catch (error) {
-          console.error('student data fetching failed:', error);
+          console.error('Failed to fetch student data:', error);
+          Alert.alert(
+            "Error",
+            "Failed to load student information. Please try again.",
+            [
+              { 
+                text: "Retry", 
+                onPress: fetchData 
+              },
+              { 
+                text: "Cancel",
+                onPress: () => router.back(),
+                style: "cancel"
+              }
+            ]
+          );
         }
       }
     };
-    fetchDataAsync();
-  }, [fetchStudentInfo]);
 
+    fetchData();
+  }, [user.userRole]);
 
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      if (isScanning) {
+        ble.stopScanning();
+        ble.cleanup();
+      }
+    };
+  }, [isScanning]);
 
-  const {
-    requestPermission,
-    checking,
-    stopScan
-  } = bleService();
+  const handleAttendance = async () => {
+    try {
+      if (!isScanning) {
+        const hasPermissions = await ble.requestPermissions();
+        if (!hasPermissions) {
+          Alert.alert(
+            "Permission Error",
+            "Bluetooth permissions are required to mark attendance.",
+            [{ text: "OK" }]
+          );
+          return;
+        }
 
-  // Function to handle button press
-  const handlePress = () => {
-    requestPermission()
-    if (isPressed) {
-      console.log("Scanned Stopped");
-      requestPermission()
-      stopScan
-      setIsPressed(!isPressed)
+        if (!facultyUUIDs) {
+          Alert.alert(
+            "Error",
+            "No faculty information available. Please try again later.",
+            [{ text: "OK" }]
+          );
+          return;
+        }
+
+        ble.startScanning(facultyUUIDs);
+        setIsScanning(true);
+        Alert.alert(
+          "Scanning Started",
+          "Looking for nearby faculty devices...",
+          [{ text: "OK" }]
+        );
+      } else {
+        ble.stopScanning();
+        setIsScanning(false);
+        Alert.alert(
+          "Scanning Stopped",
+          "Attendance marking cancelled.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error('Error in attendance marking:', error);
+      Alert.alert(
+        "Error",
+        "There was an error while marking attendance. Please try again.",
+        [{ text: "OK" }]
+      );
+      setIsScanning(false);
     }
-    else {
-      console.log("Scan started");
-      checking(FUUID);
-      setIsPressed(!isPressed)
-    }
-
   };
 
   return (
     <View style={styles.container}>
-      <Button
-        title={isPressed ? "Stop Attendance" : "Mark Attendance"}
-        color={isPressed ? 'red' : undefined} // Change color to red when pressed
-        onPress={handlePress}
-      />
+      <View style={styles.card}>
+        <Text style={styles.title}>Mark Attendance</Text>
+        <Text style={styles.status}>
+          Status: {isScanning ? 'Scanning...' : 'Ready'}
+        </Text>
+        
+        <TouchableOpacity
+          style={[styles.button, isScanning && styles.activeButton]}
+          onPress={handleAttendance}
+        >
+          <Text style={styles.buttonText}>
+            {isScanning ? 'Stop Scanning' : 'Mark Attendance'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
-
-export default StudentMarkingAttendance;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  status: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  activeButton: {
+    backgroundColor: '#FF3B30',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
+
+export default StudentMarkingAttendance;
