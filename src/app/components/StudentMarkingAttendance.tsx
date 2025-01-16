@@ -43,15 +43,15 @@ const StudentMarkingAttendance = () => {
 
   // Function to handle button press
   const handlePress = () => {
-    requestPermission
+    requestPermission()
     if (isPressed) {
       console.log("Scanned Stopped");
+      requestPermission()
       stopScan
       setIsPressed(!isPressed)
     }
     else {
       console.log("Scan started");
-
       checking(FUUID);
       setIsPressed(!isPressed)
     }

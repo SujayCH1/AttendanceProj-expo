@@ -1,34 +1,40 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
+import { advertiseStop } from 'react-native-ble-phone-to-phone';
 
 type RouteParams = {
   uuid: string,
   courseName: string;
   module: string;
   dividedContent: string;
-}
+};
 
 const MarkAttendance = () => {
   const params = useLocalSearchParams<RouteParams>();
   const router = useRouter();
 
-  const {
-    requestPermission,
-    advertise
-  } = bleService()
+  const { requestPermission, advertise } = bleService();
 
-  const handleMarkAttendance = async() => {
-    const isPermissionsEnabled = await requestPermission();
-    if (isPermissionsEnabled) {
-      console.log("Checking Started");
-      advertise(params.uuid)
+  const [isSessionActive, setIsSessionActive] = useState(false);
+
+  const handleMarkAttendance = async () => {
+    if (!isSessionActive) {
+      const isPermissionsEnabled = await requestPermission();
+      if (isPermissionsEnabled) {
+        console.log("Checking Started");
+        console.log(params.uuid);
+        advertise(params.uuid);
+      }
+      console.log("Session started...");
+    } else {
+      advertiseStop();
+      console.log("Session stopped...");
     }
-    
-    console.log("Marking attendance...");
-  };
 
+    setIsSessionActive(!isSessionActive);
+  };
 
   const handleBackPress = () => {
     Alert.alert(
@@ -37,12 +43,12 @@ const MarkAttendance = () => {
       [
         {
           text: "Cancel",
-          style: "cancel"
+          style: "cancel",
         },
         {
           text: "Yes, go back",
-          onPress: () => router.back()
-        }
+          onPress: () => router.back(),
+        },
       ]
     );
   };
@@ -62,17 +68,17 @@ const MarkAttendance = () => {
         <Text style={styles.courseName}>{params.courseName}</Text>
         <Text style={styles.module}>Module: {params.module}</Text>
         <Text style={styles.dividedContent}>Content: {params.dividedContent}</Text>
-        
+
         <View style={styles.attendanceSection}>
           <Text style={styles.sectionTitle}>Attendance Details</Text>
         </View>
 
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, isSessionActive && styles.stopButton]} 
           onPress={handleMarkAttendance}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Start Session</Text>
+          <Text style={styles.buttonText}>{isSessionActive ? 'Stop Session' : 'Start Session'}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -152,9 +158,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
+  stopButton: {
+    backgroundColor: '#FF3B30',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  }
+  },
 });
