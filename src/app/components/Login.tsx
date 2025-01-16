@@ -160,6 +160,14 @@ function Login() {
     };
   }, [router, setUUID, selectedRole]);
 
+  const handleRoleSelection = (role: "student" | "faculty") => {
+    setSelectedRole(role);
+    setUser(prev => ({
+      ...prev,
+      userRole: role
+    }));
+  };
+
   const handleLogin = async () => {
     if (!selectedRole) {
       console.log("No role selected");
@@ -169,7 +177,6 @@ function Login() {
     setIsLoading(true);
     setUser(prev => ({
       ...prev,
-      userRole: selectedRole,
       status: "loggedIn"
     }));
 
@@ -190,7 +197,7 @@ function Login() {
             styles.roleButton,
             selectedRole === 'student' && styles.selectedRole
           ]}
-          onPress={() => setSelectedRole('student')}
+          onPress={() => handleRoleSelection('student')}
         >
           <Text style={[
             styles.roleText,
@@ -203,7 +210,7 @@ function Login() {
             styles.roleButton,
             selectedRole === 'faculty' && styles.selectedRole
           ]}
-          onPress={() => setSelectedRole('faculty')}
+          onPress={() => handleRoleSelection('faculty')}
         >
           <Text style={[
             styles.roleText,
