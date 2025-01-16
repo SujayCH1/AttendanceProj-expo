@@ -1,4 +1,4 @@
-import { Button, View } from "react-native";
+import { Button, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { makeRedirectUri } from "expo-auth-session";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import * as WebBrowser from "expo-web-browser";
@@ -7,7 +7,7 @@ import { supabase } from "../utils/supabase";
 import { useRouter } from "expo-router";
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import { fetchSessionData } from "../api/useGetData";
-import { UUIDContext, UUIDContextType } from "../context/uuidContext";
+import { UUIDContext } from "../context/uuidContext";
 import { UserContext } from "../context/UserContext";
 import { UserType } from "../context/UserContext";
 
@@ -71,7 +71,8 @@ const createSessionFromUrl = async (
 const performOAuth = async (
   router: any,
   setUUID: Dispatch<SetStateAction<string | null>>,
-  user: UserType
+  user: UserType,
+  selectedRole: "student" | "faculty"
 ) => {
   try {
     console.log("Starting OAuth flow with redirect URI:", redirectTo);
@@ -103,9 +104,9 @@ const performOAuth = async (
     if (result.type === "success" && result.url) {
       const session = await createSessionFromUrl(result.url, setUUID);
       if (session) {
-        if (user.userRole === 'student') {
+        if (selectedRole === 'student') {
           router.push("/components/StudentView");
-        } else if (user.userRole === 'faculty') {
+        } else {
           router.push("/components/TeacherView");
         }
       }
@@ -121,7 +122,8 @@ function Login() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { setUUID } = useContext(UUIDContext);
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
+  const [selectedRole, setSelectedRole] = useState<"student" | "faculty" | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -133,7 +135,7 @@ function Login() {
         setIsLoading(true);
         const session = await createSessionFromUrl(url, setUUID);
         if (session && mounted) {
-          router.push("/components/StudentView");
+          router.push(selectedRole === 'student' ? "/components/StudentView" : "/components/TeacherView");
         }
       } catch (error) {
         console.error("Deep linking error:", error);
@@ -156,28 +158,106 @@ function Login() {
       mounted = false;
       subscription.remove();
     };
-  }, [router, setUUID]);
-
-  
+  }, [router, setUUID, selectedRole]);
 
   const handleLogin = async () => {
+    if (!selectedRole) {
+      console.log("No role selected");
+      return;
+    }
+
     setIsLoading(true);
+    setUser(prev => ({
+      ...prev,
+      userRole: selectedRole,
+      status: "loggedIn"
+    }));
+
     try {
-      await performOAuth(router, setUUID, user);
+      await performOAuth(router, setUUID, user, selectedRole);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+    <View style={styles.container}>
+      <Text style={styles.title}>Select Your Role</Text>
+      
+      <View style={styles.roleContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.roleButton,
+            selectedRole === 'student' && styles.selectedRole
+          ]}
+          onPress={() => setSelectedRole('student')}
+        >
+          <Text style={[
+            styles.roleText,
+            selectedRole === 'student' && styles.selectedRoleText
+          ]}>Student</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.roleButton,
+            selectedRole === 'faculty' && styles.selectedRole
+          ]}
+          onPress={() => setSelectedRole('faculty')}
+        >
+          <Text style={[
+            styles.roleText,
+            selectedRole === 'faculty' && styles.selectedRoleText
+          ]}>Faculty</Text>
+        </TouchableOpacity>
+      </View>
+
       <Button
         onPress={handleLogin}
         title={isLoading ? "Signing in..." : "Sign in with Github"}
-        disabled={isLoading}
+        disabled={isLoading || !selectedRole}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
+  },
+  roleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 30,
+    width: "100%",
+  },
+  roleButton: {
+    flex: 1,
+    margin: 10,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    alignItems: "center",
+  },
+  selectedRole: {
+    backgroundColor: "#007AFF",
+  },
+  roleText: {
+    fontSize: 16,
+    color: "#007AFF",
+  },
+  selectedRoleText: {
+    color: "white",
+  },
+});
 
 export default Login;

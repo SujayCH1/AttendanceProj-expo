@@ -13,8 +13,8 @@ export const fetchSessionData = async () => {
 
     if (session) {
       const userID = session.user.id;
-      // currentUUID = userID //for dynamically fetching
-      currentUUID = '33333333-3333-3333-3333-333333333333' // for student temp
+      currentUUID = userID //for dynamically fetching
+      // currentUUID = '33333333-3333-3333-3333-333333333333' // for student temp
       // currentUUID = '22222222-2222-2222-2222-222222222222' // for teacher temp
       console.log('current uuid, updated from fetchSessionData: ', currentUUID)
       return userID;
@@ -35,6 +35,7 @@ export const fetchStudentInfo = async () => {
       .from("student_info")
       .select("*")
       .eq("user_id", currentUUID);
+
 
     if (error) {
       console.error("Error fetching student info:", error.message);
@@ -103,3 +104,4 @@ export const getFacultyIdsInSV = async (studentInfo: any) => {
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
   }
 };
+
