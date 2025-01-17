@@ -1,75 +1,57 @@
-import { FlatList, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
-import SessionPlan from '../components/alpha_data.json';
+import { FlatList, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { UserContext } from '../context/UserContext';
-import { fetchFacultyInfo } from '../api/useGetData';
-
-type SessionItem = {
-  'Course Name': string;
-  Module: string;
-  'Divided Content': string;
-  // Add other properties 
-}
-
+import { fetchFacultyInfo, getTeacherSubjects } from '../api/useGetData';
 
 const TeacherView = () => {
   const router = useRouter();
-  const currentCourse = "Internet Programming";
-  const filteredSessionPlan = SessionPlan.filter((session) => session['Course Name'] === currentCourse);
-  const {user, setUser} = useContext(UserContext)
-  const [facultyInfo, setFacultyInfo] = useState(null)
+  const { user } = useContext(UserContext);
+  const [facultyInfo, setFacultyInfo] = useState(null);
+  const [subjects, setSubjects] = useState([]);
 
   useEffect(() => {
-      const fetchDataAsync = async () => {
-        if(user.userRole === 'faculty') {
-          try {
-            const info = await fetchFacultyInfo();
-            if (info) {
-              const studentData = 'info' in info ? info.info : info;
-              setFacultyInfo(studentData);
-              console.log('faculty state: ', studentData);
-            } else {
-              console.log('no faculty info');
-            }
-          } catch (error) {
-            console.error('faculty  data fetching failed:', error);
-          }
-        }
-      };
-      fetchDataAsync();
-    }, [fetchFacultyInfo]);
-
-    const handleSessionClick = (session: SessionItem) => {
-      if (facultyInfo) {
-        router.push({
-          pathname: '/components/MarkAttendance',
-          params: {
-            uuid: facultyInfo["user_id"], // Pass the uuid from facultyInfo
-            courseName: session['Course Name'],
-            module: session.Module,
-            dividedContent: session['Divided Content'],
-          },
-        });
-      } else {
-        console.warn('UUID not found in facultyInfo');
+    const fetchData = async () => {
+      if (user?.userRole === 'faculty') {
+        const info = await fetchFacultyInfo();
+        setFacultyInfo(info || null);
+        const subjectsData = await getTeacherSubjects(info?.faculty_id);
+        setSubjects(subjectsData || []);
       }
     };
-    
+    fetchData();
+  }, [user]);
+
+  const handleSessionClick = (subject) => {
+    router.push({
+      pathname: '/components/MarkAttendance',
+      params: {
+        uuid: facultyInfo.user_id,
+        subjectId: subject.subject_id,
+        courseName: subject.subject_name,
+        branch: subject.branch,
+        semester: subject.semester,
+        division: subject.division,
+        batch: subject.batch,
+      },
+    });
+  };
 
   return (
     <View style={styles.container}>
-      <FlatList 
-        data={filteredSessionPlan}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({item}) => (
-          <TouchableOpacity 
-            style={styles.sessionItem} 
+      <Text style={styles.header}>Your Subjects</Text>
+      <FlatList
+        data={subjects}
+        keyExtractor={(item) => item.sem_id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.subjectCard}
             onPress={() => handleSessionClick(item)}
           >
-            <Text style={styles.courseName}>{item['Course Name']}</Text>
-            <Text style={styles.module}>{item.Module}</Text>
-            <Text style={styles.dividedContent}>{item['Divided Content']}</Text>
+            <Text style={styles.subjectName}>{item.subject_name}</Text>
+            <Text style={styles.subjectDetails}>
+              {`${item.branch} - Sem ${item.semester} - Div ${item.division} - Batch ${item.batch}`}
+            </Text>
           </TouchableOpacity>
         )}
       />
@@ -83,32 +65,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f9f9f9', // Light background color
+    backgroundColor: '#f9f9f9',
   },
-  sessionItem: {
-    backgroundColor: '#fff', // White background for each session item
-    padding: 12,
-    marginBottom: 12,
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  subjectCard: {
+    backgroundColor: '#fff',
+    padding: 16,
     borderRadius: 8,
-    shadowColor: '#000', // Shadow for depth
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4, // Shadow for Android
   },
-  courseName: {
+  subjectName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333', // Dark color for course name
-    marginBottom: 8,
   },
-  module: {
-    fontSize: 16,
-    color: '#666', // Lighter color for module
-    marginBottom: 6,
-  },
-  dividedContent: {
+  subjectDetails: {
     fontSize: 14,
-    color: '#444', // Medium dark color for divided content
+    color: '#666',
+    marginTop: 4,
   },
 });

@@ -3,6 +3,8 @@ import { supabase } from "../utils/supabase";
 
 let currentUUID: string | null = null
 
+
+//login 
 export const fetchSessionData = async () => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
@@ -28,6 +30,7 @@ export const fetchSessionData = async () => {
   }
 };
 
+// studunt view
 export const fetchStudentInfo = async () => {
   try {
     // Fetch student information based on UUID
@@ -54,6 +57,7 @@ export const fetchStudentInfo = async () => {
   }
 };
 
+// teacher view
 export const fetchFacultyInfo = async () => {
   try {
     const { data, error } = await supabase
@@ -77,6 +81,7 @@ export const fetchFacultyInfo = async () => {
   }
 };
 
+// student view
 export const getFacultyIdsInSV = async (studentInfo: any) => {
   try {
     const { data: facultyUUIDs, error } = await supabase
@@ -104,4 +109,83 @@ export const getFacultyIdsInSV = async (studentInfo: any) => {
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
   }
 };
+
+
+//teacher view 
+export const getCourseLectures = async (facultyUUID) => {
+  try {
+    // Fetch sem_id and student user_ids in a single query using a join
+    const { data, error } = await supabase
+      .from("sem_info")
+      .select(`
+        sem_id,
+        student_info(user_id)
+      `)
+      .eq("faculty_id", facultyUUID);
+
+    if (error) {
+      throw new Error(`Error fetching course lectures: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error("No data found for the given faculty UUID");
+    }
+
+    // Extract sem_ids and student user_ids from the result
+    const semIDs = data.map((record) => record.sem_id);
+    const studentList = data
+      .flatMap((record) => record.student_info || [])
+      .map((student) => student.user_id);
+
+    return { semIDs, studentList };
+  } catch (error) {
+    console.error("Error in getCourseLectures:", error);
+    throw error instanceof Error ? error : new Error("An unexpected error occurred");
+  }
+};
+
+export const getTeacherSubjects = async (facultyId) => {
+  try {
+    const { data, error } = await supabase
+      .from('sem_info')
+      .select(`
+        *,
+        subject:subject_id (subject_name)
+      `)
+      .eq('faculty_id', facultyId);
+
+    if (error) throw error;
+    
+    return data.map(item => ({
+      ...item,
+      subject_name: item.subject.subject_name
+    }));
+  } catch (err) {
+    console.error("Error fetching teacher subjects:", err);
+    return [];
+  }
+};
+
+export const getActiveSessionsForStudent = async (studentInfo) => {
+  try {
+    const { data, error } = await supabase
+      .from('active_sessions')
+      .select(`
+        *,
+        subject:subject_id (subject_name)
+      `)
+      .eq('semester', studentInfo.semester)
+      .eq('branch', studentInfo.branch)
+      .eq('division', studentInfo.division)
+      .eq('batch', studentInfo.batch)
+      .is('end_time', null);
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error("Error fetching active sessions:", err);
+    return [];
+  }
+};
+
 

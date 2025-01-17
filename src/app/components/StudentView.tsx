@@ -1,109 +1,70 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { fetchStudentInfo, getFacultyIdsInSV } from '../api/useGetData';
+import { fetchStudentInfo, getActiveSessionsForStudent } from '../api/useGetData';
 import { UserContext } from '../context/UserContext';
 
-
-const StudentView = ({ navigation }: any) => {
-
+const StudentView = () => {
   const router = useRouter();
-  const [studentInfo, setStudentInfo] = useState(null)
-  const { user, setUser } = useContext(UserContext)
-  const [TUUID, setTUUID] = useState(null)
+  const [studentInfo, setStudentInfo] = useState(null);
+  const [activeSessions, setActiveSessions] = useState([]);
+  const { user } = useContext(UserContext);
 
   useEffect(() => {
-    const fetchDataAsync = async () => {
-      if (user.userRole === 'student') {
-        try {
-          const info = await fetchStudentInfo();
-          if (info) {
-            const studentData = 'info' in info ? info.info : info;
-            setStudentInfo(studentData);
-            console.log('student state in Student view: ', studentData);
-          } else {
-            console.log('no student info');
-          }
-        } catch (error) {
-          console.error('student data fetching failed:', error);
-        }
+    const fetchData = async () => {
+      if (user?.userRole === 'student') {
+        const info = await fetchStudentInfo();
+        setStudentInfo(info || null);
       }
     };
-    fetchDataAsync();
-  }, [fetchStudentInfo]);
+    fetchData();
+  }, [user]);
 
   useEffect(() => {
-    const fetchTUUID = async () => {
+    const pollActiveSessions = setInterval(async () => {
       if (studentInfo) {
-
-        try {
-          const uuidResponse = await getFacultyIdsInSV(studentInfo);
-          if (uuidResponse) {
-            const uuids = 'data' in uuidResponse ? uuidResponse.data : uuidResponse;
-            console.log("uuids",uuids);
-            setTUUID(uuidResponse);
-          } else {
-            console.log('no faculty uuids');
-          }
-        } catch (error) {
-          console.error('Faculty UUID fetching failed:', error);
-        }
+        const sessions = await getActiveSessionsForStudent(studentInfo);
+        setActiveSessions(sessions || []);
       }
-    }
-    fetchTUUID();
-  }, [studentInfo,getFacultyIdsInSV]);
+    }, 5000);
 
+    return () => clearInterval(pollActiveSessions);
+  }, [studentInfo]);
 
-  useEffect(() => {
-    console.log('faculty UUIDS fetched on student side:', TUUID);
-  }, [TUUID]);
-
-  function handleClick(): void {
-    if (studentInfo) {
-      router.push({
-        pathname: '/components/StudentMarkingAttendance',
-        params: {
-          facultyUUIDS: TUUID,
-        },
-      })
-    }
-  }
+  const handleSessionClick = (session) => {
+    router.push({
+      pathname: '/components/StudentMarkingAttendance',
+      params: {
+        sessionId: session.session_id,
+        facultyId: session.faculty_id,
+        subjectName: session.subject.subject_name,
+      },
+    });
+  };
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={() =>
-        handleClick()
-      }
-    >
-      <View style={styles.container}>
-        <Text style={styles.header}>Student View</Text>
-
-        {/* Details Container */}
-        <View style={styles.detailsContainer}>
-          <Text style={styles.detailText}>
-            <Text style={styles.label}>Teacher Name: </Text>Mr. John Doe
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.label}>Subject: </Text>Mathematics
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.label}>Semester: </Text>5
-          </Text>
-        </View>
-
-
-        {/* Button to navigate to Feedback Form */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push({
-            pathname: '/components/FeedBackForm'
-          })}
-        >
-          <Text style={styles.buttonText}>Feedback Form</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+    <View style={styles.container}>
+      <Text style={styles.header}>Active Sessions</Text>
+      {activeSessions.length === 0 ? (
+        <Text style={styles.noSessions}>No active attendance sessions</Text>
+      ) : (
+        <FlatList
+          data={activeSessions}
+          keyExtractor={(item) => item.session_id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.sessionCard}
+              onPress={() => handleSessionClick(item)}
+            >
+              <Text style={styles.subjectName}>{item.subject.subject_name}</Text>
+              <Text style={styles.sessionDetails}>
+                {`Started at: ${new Date(item.start_time).toLocaleTimeString()}`}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </View>
   );
 };
 
@@ -121,39 +82,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  detailsContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 16,
+  noSessions: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  sessionCard: {
     backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 5, // For Android shadow
-    marginVertical: 20,
   },
-  detailText: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  label: {
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#1e90ff',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 'auto',
-    marginBottom: 15
-  },
-  buttonText: {
-    color: '#fff',
+  subjectName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
+  },
+  sessionDetails: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
 });

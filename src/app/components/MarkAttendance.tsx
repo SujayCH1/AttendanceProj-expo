@@ -1,30 +1,70 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  ScrollView, 
+  TouchableOpacity, 
+  Alert,
+  NativeEventEmitter,
+  NativeModules 
+} from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
+import { supabase } from '../utils/supabase';
 
 type RouteParams = {
   uuid: string;
   courseName: string;
   module: string;
   dividedContent: string;
+  sem_id: string;
 };
 
 const MarkAttendance = () => {
   const params = useLocalSearchParams<RouteParams>();
   const router = useRouter();
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [markedStudents, setMarkedStudents] = useState([]);
   const ble = bleService();
 
-  // Cleanup effect
   useEffect(() => {
+    const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
+    const foundUuidListener = eventEmitter.addListener("foundUuid", (data) => {
+      console.log("Student marked attendance:", data);
+      setMarkedStudents(prev => [...prev, data]);
+    });
+
     return () => {
+      foundUuidListener.remove();
       if (isSessionActive) {
         ble.stopAdvertising();
         ble.cleanup();
       }
     };
   }, [isSessionActive]);
+
+  const handleConfirmAttendance = async () => {
+    try {
+      const attendanceData = {
+        sem_id: params.sem_id,
+        date: new Date().toISOString(),
+        students: markedStudents
+      };
+      
+      const { data, error } = await supabase
+        .from('attendance_table')
+        .insert([attendanceData]);
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Attendance recorded successfully");
+      router.back();
+    } catch (error) {
+      console.error('Error recording attendance:', error);
+      Alert.alert("Error", "Failed to record attendance");
+    }
+  };
 
   const handleMarkAttendance = async () => {
     try {
@@ -141,6 +181,18 @@ const MarkAttendance = () => {
             {isSessionActive ? 'Stop Session' : 'Start Session'}
           </Text>
         </TouchableOpacity>
+
+        {markedStudents.length > 0 && (
+          <TouchableOpacity 
+            style={[styles.button, styles.confirmButton]} 
+            onPress={handleConfirmAttendance}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>
+              Confirm Attendance ({markedStudents.length} students)
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -224,6 +276,9 @@ const styles = StyleSheet.create({
   },
   stopButton: {
     backgroundColor: '#FF3B30',
+  },
+  confirmButton: {
+    backgroundColor: '#34C759',
   },
   buttonText: {
     color: '#fff',
