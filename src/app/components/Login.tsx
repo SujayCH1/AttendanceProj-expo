@@ -50,12 +50,14 @@ const createSessionFromUrl = async (
 
     if (error) throw error;
 
+    console.log("Session created successfully");
+
     if (data) {
       const uuid = await fetchSessionData();
       if (uuid) {
-        console.log('uuid assigned');
+        console.log('uuid assigned')
       } else {
-        console.error('uuid assignment failed');
+        console.error('uuid assignment failed')
       }
     }
 
@@ -70,10 +72,11 @@ const performOAuth = async (
   router: any,
   setUUID: Dispatch<SetStateAction<string | null>>,
   user: UserType,
-  setUser: Dispatch<SetStateAction<UserType>>,
   selectedRole: "student" | "faculty"
 ) => {
   try {
+    console.log("Starting OAuth flow with redirect URI:", redirectTo);
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
@@ -85,6 +88,8 @@ const performOAuth = async (
     if (error) throw error;
     if (!data?.url) throw new Error("No authorization URL returned from Supabase");
 
+    console.log("Opening auth URL:", data.url);
+
     const result = await WebBrowser.openAuthSessionAsync(
       data.url,
       redirectTo,
@@ -94,17 +99,16 @@ const performOAuth = async (
       }
     );
 
+    console.log("Auth result:", result);
+
     if (result.type === "success" && result.url) {
       const session = await createSessionFromUrl(result.url, setUUID);
       if (session) {
-        setUser(prev => ({
-          ...prev,
-          userRole: selectedRole,
-          status: "loggedIn",
-          uuid: session.user.id
-        }));
-        
-        router.push(selectedRole === 'student' ? "/components/StudentView" : "/components/TeacherView");
+        if (selectedRole === 'student') {
+          router.push("/components/StudentView");
+        } else {
+          router.push("/components/TeacherView");
+        }
       }
     } else {
       console.log("Authentication was cancelled or failed:", result.type);
@@ -130,13 +134,7 @@ function Login() {
       try {
         setIsLoading(true);
         const session = await createSessionFromUrl(url, setUUID);
-        if (session && mounted && selectedRole) {
-          setUser(prev => ({
-            ...prev,
-            userRole: selectedRole,
-            status: "loggedIn",
-            uuid: session.user.id
-          }));
+        if (session && mounted) {
           router.push(selectedRole === 'student' ? "/components/StudentView" : "/components/TeacherView");
         }
       } catch (error) {
@@ -160,23 +158,30 @@ function Login() {
       mounted = false;
       subscription.remove();
     };
-  }, [router, setUUID, selectedRole, setUser]);
+  }, [router, setUUID, selectedRole]);
 
   const handleRoleSelection = (role: "student" | "faculty") => {
     setSelectedRole(role);
     setUser(prev => ({
       ...prev,
-      userRole: role,
-      status: "notLoggedIn"
+      userRole: role
     }));
   };
 
   const handleLogin = async () => {
-    if (!selectedRole) return;
+    if (!selectedRole) {
+      console.log("No role selected");
+      return;
+    }
 
     setIsLoading(true);
+    setUser(prev => ({
+      ...prev,
+      status: "loggedIn"
+    }));
+
     try {
-      await performOAuth(router, setUUID, user, setUser, selectedRole);
+      await performOAuth(router, setUUID, user, selectedRole);
     } finally {
       setIsLoading(false);
     }
