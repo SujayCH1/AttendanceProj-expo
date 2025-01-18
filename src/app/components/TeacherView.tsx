@@ -24,7 +24,7 @@ const TeacherView = () => {
     router.push({
       pathname: '/components/MarkAttendance',
       params: {
-        uuid: facultyInfo.user_id,
+        uuid: facultyInfo.faculty_id, // Use faculty_id instead of user_id if needed for attendance
         subjectId: subject.subject_id,
         courseName: subject.subject_name,
         branch: subject.branch,
@@ -34,7 +34,6 @@ const TeacherView = () => {
       },
     });
   };
-
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Your Subjects</Text>
