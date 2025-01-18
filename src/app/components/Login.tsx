@@ -175,18 +175,20 @@ function Login() {
     }
 
     setIsLoading(true);
-    setUser(prev => ({
-      ...prev,
-      status: "loggedIn",
-      userRole: selectedRole
-    }));
+    
+    // Directly update user state with the selected role
+    setUser({
+      uuid: "",  // Keep the existing uuid or update it if needed
+      userRole: selectedRole,
+      status: "loggedIn"
+    });
 
     try {
       await performOAuth(router, setUUID, user, selectedRole);
     } finally {
       setIsLoading(false);
     }
-  };
+};
 
   return (
     <View style={styles.container}>
