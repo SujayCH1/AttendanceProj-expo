@@ -12,10 +12,10 @@ const TeacherView = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-        const info = await fetchFacultyInfo();
-        setFacultyInfo(info || null);
-        const subjectsData = await getTeacherSubjects(info?.faculty_id);
-        setSubjects(subjectsData || []);
+      const info = await fetchFacultyInfo();
+      setFacultyInfo(info || null);
+      const subjectsData = await getTeacherSubjects(info?.faculty_id);
+      setSubjects(subjectsData || []);
     };
     fetchData();
   }, [user]);
@@ -60,17 +60,8 @@ const TeacherView = () => {
 export default TeacherView;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
+  container: { flex: 1, padding: 16, backgroundColor: '#f9f9f9' },
+  header: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
   subjectCard: {
     backgroundColor: '#fff',
     padding: 16,
@@ -82,13 +73,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  subjectName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  subjectDetails: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
+  subjectName: { fontSize: 18, fontWeight: 'bold' },
+  subjectDetails: { fontSize: 14, color: '#666', marginTop: 4 },
 });

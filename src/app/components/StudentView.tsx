@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchStudentInfo, getActiveSessionsForStudent } from '../api/useGetData';
 import { UserContext } from '../context/UserContext';
@@ -14,12 +14,7 @@ const StudentView = () => {
   useEffect(() => {
     const fetchData = async () => {
       const info = await fetchStudentInfo();
-      if (info) {
-        console.log('Fetched student info successfully')
-        setStudentInfo(info || null);
-      } else {
-        console.log('failed to fetch student info')
-      }
+      setStudentInfo(info || null);
     };
     fetchData();
   }, [user]);
@@ -40,8 +35,6 @@ const StudentView = () => {
     setIsRefreshing(true);
     try {
       await checkActiveSessions();
-    } catch (error) {
-      console.error('Error refreshing sessions:', error);
     } finally {
       setIsRefreshing(false);
     }
@@ -50,11 +43,7 @@ const StudentView = () => {
   const handleSessionClick = (session) => {
     router.push({
       pathname: '/components/StudentMarkingAttendance',
-      params: {
-        sessionId: session.session_id,
-        facultyId: session.faculty_id,
-        subjectName: session.subject.subject_name,
-      },
+      params: { sessionId: session.session_id, facultyId: session.faculty_id, subjectName: session.subject.subject_name },
     });
   };
 
@@ -62,7 +51,7 @@ const StudentView = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Active Sessions</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.refreshButton}
           onPress={handleRefresh}
           disabled={isRefreshing}
@@ -72,7 +61,7 @@ const StudentView = () => {
           </Text>
         </TouchableOpacity>
       </View>
-      
+
       {activeSessions.length === 0 ? (
         <Text style={styles.noSessions}>No active attendance sessions</Text>
       ) : (
@@ -97,59 +86,13 @@ const StudentView = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  refreshButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    opacity: 1,
-  },
-  refreshButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  noSessions: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  sessionCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  subjectName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  sessionDetails: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
+  container: { flex: 1, padding: 16, backgroundColor: '#f9f9f9' },
+  headerContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  header: { fontSize: 24, fontWeight: 'bold' },
+  refreshButton: { backgroundColor: '#007AFF', padding: 8, borderRadius: 8 },
+  refreshButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  noSessions: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 20 },
+  sessionCard: { backgroundColor: '#fff', padding: 16, borderRadius: 8, marginBottom: 12 },
+  subjectName: { fontSize: 18, fontWeight: 'bold' },
+  sessionDetails: { fontSize: 14, color: '#666', marginTop: 4 },
 });
-
-export default StudentView;
