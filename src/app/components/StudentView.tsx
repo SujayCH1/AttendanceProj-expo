@@ -12,7 +12,6 @@ const StudentView = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (user?.userRole === 'student') {
         const info = await fetchStudentInfo();
         if (info) {
           console.log('Fecthed student info sucessfully')
@@ -20,8 +19,6 @@ const StudentView = () => {
         } else {
           console.log('failed to fetch student info')
         }
-
-      }
     };
     fetchData();
   }, [user, fetchStudentInfo]);

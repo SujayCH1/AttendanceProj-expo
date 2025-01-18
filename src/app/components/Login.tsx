@@ -20,8 +20,7 @@ const redirectTo = makeRedirectUri({
 
 const createSessionFromUrl = async (
   url: string,
-  setUUID: Dispatch<SetStateAction<string | null>>,
-  setUser: Dispatch<SetStateAction<UserType>>
+  setUUID: Dispatch<SetStateAction<string | null>>
 ) => {
   try {
     const hasHashParams = url.includes("#");
@@ -56,19 +55,9 @@ const createSessionFromUrl = async (
     if (data) {
       const uuid = await fetchSessionData();
       if (uuid) {
-        console.log('uuid assigned');
-        setUUID(uuid);
-        setUser(prev => ({
-          ...prev,
-          uuid: uuid,
-          status: "loggedIn"
-        }));
+        console.log('uuid assigned')
       } else {
-        console.error('uuid assignment failed');
-        setUser(prev => ({
-          ...prev,
-          status: "notLoggedIn"
-        }));
+        console.error('uuid assignment failed')
       }
     }
 
@@ -82,7 +71,7 @@ const createSessionFromUrl = async (
 const performOAuth = async (
   router: any,
   setUUID: Dispatch<SetStateAction<string | null>>,
-  setUser: Dispatch<SetStateAction<UserType>>,
+  user: UserType,
   selectedRole: "student" | "faculty"
 ) => {
   try {
@@ -113,7 +102,7 @@ const performOAuth = async (
     console.log("Auth result:", result);
 
     if (result.type === "success" && result.url) {
-      const session = await createSessionFromUrl(result.url, setUUID, setUser);
+      const session = await createSessionFromUrl(result.url, setUUID);
       if (session) {
         if (selectedRole === 'student') {
           router.push("/components/StudentView");
@@ -123,11 +112,9 @@ const performOAuth = async (
       }
     } else {
       console.log("Authentication was cancelled or failed:", result.type);
-      throw new Error("Authentication failed or was cancelled");
     }
   } catch (error) {
     console.error("OAuth error:", error);
-    throw error;
   }
 };
 
@@ -139,10 +126,6 @@ function Login() {
   const [selectedRole, setSelectedRole] = useState<"student" | "faculty" | null>(null);
 
   useEffect(() => {
-    console.log('User context updated:', user);
-  }, [user]);
-
-  useEffect(() => {
     let mounted = true;
 
     const handleDeepLink = async (url: string) => {
@@ -150,7 +133,7 @@ function Login() {
 
       try {
         setIsLoading(true);
-        const session = await createSessionFromUrl(url, setUUID, setUser);
+        const session = await createSessionFromUrl(url, setUUID);
         if (session && mounted) {
           router.push(selectedRole === 'student' ? "/components/StudentView" : "/components/TeacherView");
         }
@@ -175,7 +158,7 @@ function Login() {
       mounted = false;
       subscription.remove();
     };
-  }, [router, setUUID, selectedRole, setUser]);
+  }, [router, setUUID, selectedRole]);
 
   const handleRoleSelection = (role: "student" | "faculty") => {
     setSelectedRole(role);
@@ -192,15 +175,13 @@ function Login() {
     }
 
     setIsLoading(true);
+    setUser(prev => ({
+      ...prev,
+      status: "loggedIn"
+    }));
 
     try {
-      await performOAuth(router, setUUID, setUser, selectedRole);
-    } catch (error) {
-      console.error("Login failed:", error);
-      setUser(prev => ({
-        ...prev,
-        status: "notLoggedIn"
-      }));
+      await performOAuth(router, setUUID, user, selectedRole);
     } finally {
       setIsLoading(false);
     }

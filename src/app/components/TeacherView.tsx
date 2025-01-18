@@ -12,12 +12,10 @@ const TeacherView = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (user?.userRole === 'faculty') {
         const info = await fetchFacultyInfo();
         setFacultyInfo(info || null);
         const subjectsData = await getTeacherSubjects(info?.faculty_id);
         setSubjects(subjectsData || []);
-      }
     };
     fetchData();
   }, [user]);
