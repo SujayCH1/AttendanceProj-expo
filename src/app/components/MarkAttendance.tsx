@@ -78,7 +78,23 @@ const MarkAttendance = () => {
           );
           return;
         }
-
+  
+        // Create active session
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('active_sessions')
+          .insert([{
+            faculty_id: params.uuid,
+            subject_id: params.subjectId,
+            semester: params.semester,
+            branch: params.branch,
+            division: params.division,
+            batch: params.batch,
+            start_time: new Date().toISOString(),
+            end_time: null
+          }]);
+  
+        if (sessionError) throw sessionError;
+  
         await ble.startAdvertising(params.uuid);
         setIsSessionActive(true);
         Alert.alert(
@@ -87,6 +103,15 @@ const MarkAttendance = () => {
           [{ text: "OK" }]
         );
       } else {
+        // End active session
+        const { error: updateError } = await supabase
+          .from('active_sessions')
+          .update({ end_time: new Date().toISOString() })
+          .eq('faculty_id', params.uuid)
+          .is('end_time', null);
+  
+        if (updateError) throw updateError;
+  
         await ble.stopAdvertising();
         setIsSessionActive(false);
         Alert.alert(
