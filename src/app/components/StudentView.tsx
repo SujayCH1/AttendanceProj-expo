@@ -14,11 +14,17 @@ const StudentView = () => {
     const fetchData = async () => {
       if (user?.userRole === 'student') {
         const info = await fetchStudentInfo();
-        setStudentInfo(info || null);
+        if (info) {
+          console.log('Fecthed student info sucessfully')
+          setStudentInfo(info || null);
+        } else {
+          console.log('failed to fetch student info')
+        }
+
       }
     };
     fetchData();
-  }, [user]);
+  }, [user, fetchStudentInfo]);
 
   useEffect(() => {
     const pollActiveSessions = setInterval(async () => {
