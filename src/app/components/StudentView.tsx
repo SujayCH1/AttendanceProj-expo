@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { fetchStudentInfo, getActiveSessionsForStudent } from '../api/useGetData';
 import { UserContext } from '../context/UserContext';
@@ -8,31 +8,44 @@ const StudentView = () => {
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useContext(UserContext);
 
   useEffect(() => {
     const fetchData = async () => {
-        const info = await fetchStudentInfo();
-        if (info) {
-          console.log('Fecthed student info sucessfully')
-          setStudentInfo(info || null);
-        } else {
-          console.log('failed to fetch student info')
-        }
+      const info = await fetchStudentInfo();
+      if (info) {
+        console.log('Fetched student info successfully')
+        setStudentInfo(info || null);
+      } else {
+        console.log('failed to fetch student info')
+      }
     };
     fetchData();
-  }, [user, fetchStudentInfo]);
+  }, [user]);
+
+  const checkActiveSessions = useCallback(async () => {
+    if (studentInfo) {
+      const sessions = await getActiveSessionsForStudent(studentInfo);
+      setActiveSessions(sessions || []);
+    }
+  }, [studentInfo]);
 
   useEffect(() => {
-    const pollActiveSessions = setInterval(async () => {
-      if (studentInfo) {
-        const sessions = await getActiveSessionsForStudent(studentInfo);
-        setActiveSessions(sessions || []);
-      }
-    }, 5000);
-
+    const pollActiveSessions = setInterval(checkActiveSessions, 5000);
     return () => clearInterval(pollActiveSessions);
-  }, [studentInfo]);
+  }, [checkActiveSessions]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await checkActiveSessions();
+    } catch (error) {
+      console.error('Error refreshing sessions:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleSessionClick = (session) => {
     router.push({
@@ -47,7 +60,19 @@ const StudentView = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Active Sessions</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Active Sessions</Text>
+        <TouchableOpacity 
+          style={styles.refreshButton}
+          onPress={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <Text style={styles.refreshButtonText}>
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
       {activeSessions.length === 0 ? (
         <Text style={styles.noSessions}>No active attendance sessions</Text>
       ) : (
@@ -71,19 +96,33 @@ const StudentView = () => {
   );
 };
 
-export default StudentView;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
     backgroundColor: '#f9f9f9',
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
+  },
+  refreshButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    opacity: 1,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   noSessions: {
     fontSize: 16,
@@ -112,3 +151,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+export default StudentView;
