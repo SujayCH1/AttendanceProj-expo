@@ -19,6 +19,11 @@ type RouteParams = {
   module: string;
   dividedContent: string;
   sem_id: string;
+  subjectId: string;
+  semester: string;
+  branch: string;
+  division: string;
+  batch: string;
 };
 
 const MarkAttendance = () => {
@@ -31,7 +36,18 @@ const MarkAttendance = () => {
   useEffect(() => {
     const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
     const foundUuidListener = eventEmitter.addListener("foundUuid", (data) => {
-      console.log("Student marked attendance:", data);
+      console.log("New student attendance marked:", {
+        studentId: data,
+        timestamp: new Date().toISOString(),
+        sessionDetails: {
+          course: params.courseName,
+          module: params.module,
+          semester: params.semester,
+          branch: params.branch,
+          division: params.division,
+          batch: params.batch
+        }
+      });
       setMarkedStudents(prev => [...prev, data]);
     });
 
@@ -42,28 +58,31 @@ const MarkAttendance = () => {
         ble.cleanup();
       }
     };
-  }, [isSessionActive]);
+  }, [isSessionActive, params]);
 
-  const handleConfirmAttendance = async () => {
-    try {
-      const attendanceData = {
-        sem_id: params.sem_id,
-        date: new Date().toISOString(),
-        students: markedStudents
-      };
-      
-      const { data, error } = await supabase
-        .from('attendance_table')
-        .insert([attendanceData]);
+  const handleConfirmAttendance = () => {
+    console.log("Final attendance summary:", {
+      totalStudents: markedStudents.length,
+      markedStudents: markedStudents,
+      sessionInfo: {
+        course: params.courseName,
+        module: params.module,
+        semester: params.semester,
+        branch: params.branch,
+        division: params.division,
+        batch: params.batch,
+        date: new Date().toISOString()
+      }
+    });
 
-      if (error) throw error;
-
-      Alert.alert("Success", "Attendance recorded successfully");
-      router.back();
-    } catch (error) {
-      console.error('Error recording attendance:', error);
-      Alert.alert("Error", "Failed to record attendance");
-    }
+    Alert.alert(
+      "Success", 
+      `Logged attendance for ${markedStudents.length} students`,
+      [{ 
+        text: "OK",
+        onPress: () => router.back()
+      }]
+    );
   };
 
   const handleMarkAttendance = async () => {
@@ -78,22 +97,16 @@ const MarkAttendance = () => {
           );
           return;
         }
-  
-        // Create active session
-        const { data: sessionData, error: sessionError } = await supabase
-          .from('active_sessions')
-          .insert([{
-            faculty_id: params.uuid,
-            subject_id: params.subjectId,
-            semester: params.semester,
-            branch: params.branch,
-            division: params.division,
-            batch: params.batch,
-            start_time: new Date().toISOString(),
-            end_time: null
-          }]);
-  
-        if (sessionError) throw sessionError;
+
+        console.log("Starting new attendance session:", {
+          faculty_id: params.uuid,
+          subject_id: params.subjectId,
+          semester: params.semester,
+          branch: params.branch,
+          division: params.division,
+          batch: params.batch,
+          start_time: new Date().toISOString()
+        });
   
         await ble.startAdvertising(params.uuid);
         setIsSessionActive(true);
@@ -103,14 +116,11 @@ const MarkAttendance = () => {
           [{ text: "OK" }]
         );
       } else {
-        // End active session
-        const { error: updateError } = await supabase
-          .from('active_sessions')
-          .update({ end_time: new Date().toISOString() })
-          .eq('faculty_id', params.uuid)
-          .is('end_time', null);
-  
-        if (updateError) throw updateError;
+        console.log("Ending attendance session", {
+          faculty_id: params.uuid,
+          end_time: new Date().toISOString(),
+          total_marked: markedStudents.length
+        });
   
         await ble.stopAdvertising();
         setIsSessionActive(false);
@@ -148,6 +158,7 @@ const MarkAttendance = () => {
               try {
                 await ble.stopAdvertising();
                 ble.cleanup();
+                console.log("Session ended early - cleaning up");
                 router.back();
               } catch (error) {
                 console.error('Error cleaning up:', error);
@@ -195,6 +206,12 @@ const MarkAttendance = () => {
           <Text style={styles.sessionStatus}>
             Status: {isSessionActive ? 'Active' : 'Inactive'}
           </Text>
+
+          {markedStudents.length > 0 && (
+            <Text style={styles.studentCount}>
+              Students Marked: {markedStudents.length}
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity 
@@ -284,7 +301,13 @@ const styles = StyleSheet.create({
   sessionStatus: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 8,
+  },
+  studentCount: {
+    fontSize: 16,
+    color: '#34C759',
     marginBottom: 16,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#007AFF',
