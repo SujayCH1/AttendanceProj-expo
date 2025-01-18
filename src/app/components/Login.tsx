@@ -177,7 +177,8 @@ function Login() {
     setIsLoading(true);
     setUser(prev => ({
       ...prev,
-      status: "loggedIn"
+      status: "loggedIn",
+      userRole: selectedRole
     }));
 
     try {
