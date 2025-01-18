@@ -1,48 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { supabase } from '../utils/supabase';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { fetchStudentInfo, getActiveSessionsForStudent } from '../api/useGetData';
+import { UserContext } from '../context/UserContext';
 
-const StudentMarkingAttendance = () => {
+const StudentView = () => {
+  const router = useRouter();
+  const [studentInfo, setStudentInfo] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { user } = useContext(UserContext);
 
-  const fetchActiveSessions = async () => {
-    const { data, error } = await supabase
-      .from('active_sessions')
-      .select('*')
-      .is('end_time', null); // Fetch only active sessions
+  useEffect(() => {
+    const fetchData = async () => {
+      const info = await fetchStudentInfo();
+      setStudentInfo(info || null);
+    };
+    fetchData();
+  }, [user]);
 
-    if (error) {
-      console.error("Error fetching active sessions:", error);
-      return [];
+  const fetchActiveSessions = useCallback(async () => {
+    if (studentInfo) {
+      const sessions = await getActiveSessionsForStudent(studentInfo);
+      setActiveSessions(sessions || []);
     }
-    setActiveSessions(data);
-  };
+  }, [studentInfo]);
 
   useEffect(() => {
     fetchActiveSessions();
-  }, []);
+  }, [fetchActiveSessions]);
 
-  const handleMarkAttendance = (sessionId) => {
-    console.log("Attendance marked for session:", sessionId);
-    Alert.alert("Attendance Marked", `You marked attendance for session ${sessionId}`);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchActiveSessions();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleSessionClick = (session) => {
+    router.push({
+      pathname: '/components/StudentMarkingAttendance',
+      params: {
+        sessionId: session.session_id,
+        facultyId: session.faculty_id,
+        subjectName: session.subject.subject_name,
+      },
+    });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Active Attendance Sessions</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Active Attendance Sessions</Text>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={handleRefresh}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.refreshButtonText}>Refresh</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {activeSessions.length === 0 ? (
-        <Text>No active sessions</Text>
+        <Text style={styles.noSessions}>No active attendance sessions</Text>
       ) : (
         <FlatList
           data={activeSessions}
           keyExtractor={(item) => item.session_id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={styles.card}
-              onPress={() => handleMarkAttendance(item.session_id)}
+              style={styles.sessionCard}
+              onPress={() => handleSessionClick(item)}
             >
-              <Text style={styles.cardText}>{item.session_name}</Text>
-              <Text>{`Branch: ${item.branch}, Sem: ${item.semester}, Div: ${item.division}`}</Text>
+              <Text style={styles.subjectName}>{item.subject.subject_name}</Text>
+              <Text style={styles.sessionDetails}>
+                {`Started at: ${new Date(item.start_time).toLocaleTimeString()}`}
+              </Text>
             </TouchableOpacity>
           )}
         />
@@ -52,10 +91,36 @@ const StudentMarkingAttendance = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  header: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
-  card: { padding: 16, backgroundColor: '#FFF', marginBottom: 12, borderRadius: 8 },
-  cardText: { fontSize: 16, fontWeight: 'bold' },
+  container: { flex: 1, padding: 16, backgroundColor: '#f9f9f9' },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  header: { fontSize: 24, fontWeight: 'bold' },
+  refreshButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    opacity: 1,
+  },
+  refreshButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  noSessions: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 20 },
+  sessionCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  subjectName: { fontSize: 18, fontWeight: 'bold' },
+  sessionDetails: { fontSize: 14, color: '#666', marginTop: 4 },
 });
 
-export default StudentMarkingAttendance;
+export default StudentView;
