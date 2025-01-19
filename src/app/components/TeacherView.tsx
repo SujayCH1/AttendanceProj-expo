@@ -14,6 +14,8 @@ const TeacherView = () => {
     const fetchData = async () => {
       const info = await fetchFacultyInfo();
       setFacultyInfo(info || null);
+      console.log("faculty info :",info);
+      
       const subjectsData = await getTeacherSubjects(info?.faculty_id);
       setSubjects(subjectsData || []);
     };
@@ -30,6 +32,7 @@ const TeacherView = () => {
     router.push({
       pathname: '/components/MarkAttendance',
       params: {
+        facultyId: facultyInfo.faculty_id,
         uuid: facultyInfo.user_id, // Use user_id instead of faculty_id
         subjectId: subject.subject_id,
         courseName: subject.subject_name,
