@@ -249,5 +249,47 @@ export const insertStudentUUIDinActiveSessions = async (
   }
 };
 
+export const getPresentStudentsFromDB = async (facultyUUID: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('active_sessions')
+      .select(`
+        student_user_id_array
+      `)
+      .eq('faculty_user_id', facultyUUID);
 
+    if (error) throw error;
+
+    console.log("present data fetched: ", data)
+
+    return data;
+  } catch (err) {
+    console.error("Error fetching present:", err);
+    return [];
+  }
+};
+
+export const getAllStudentsFromDB = async (semID: string, faculty_id: string) =>{
+  try{
+    const { data, error } = await supabase
+    .from('student_info')
+    .select(`
+      prn,
+      name,
+      semester,
+      branch,
+      division,
+      batch,
+      user_id,
+      dlo`)
+      .eq('user_id',faculty_id)
+      .eq('sem_id',semID);
+      if (error) throw error;
+      console.log("Students Table Information",data);
+      return data;
+  }catch(error){
+    console.error("Error fetching students:", error);
+    
+  }
+}
 
