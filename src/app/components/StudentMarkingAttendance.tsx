@@ -26,7 +26,7 @@ const StudentMarkingAttendance = () => {
           .from('active_sessions')
           .select('*')
           .eq('faculty_user_id', params.facultyUuid)
-          .eq('subject_id', params.subjectId)
+          .eq('subject_id', params.subjectID)
           .is('end_time', null);
     
         if (error) {
@@ -36,7 +36,7 @@ const StudentMarkingAttendance = () => {
     
         console.log('Active session data:', data);
     
-        if (data && data.length === 1) {
+        if (data && data.length == 1) {
           setActiveSession(data[0]);
         } else if (data.length > 1) {
           console.error('Multiple active sessions found. Expected one.');
