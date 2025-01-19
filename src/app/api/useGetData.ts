@@ -208,7 +208,7 @@ export const insertStudentUUIDinActiveSessions = async (
   try {
     // Validate input
     if (typeof faculty_uuid !== "string" || typeof student_uuid !== "string") {
-      throw new Error(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
+      console.log(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
     }
 
     // Fetch the current array for the given faculty_uuid
@@ -237,7 +237,7 @@ export const insertStudentUUIDinActiveSessions = async (
     try {
       JSON.parse(JSON.stringify(updatedArray));
     } catch (jsonError) {
-      throw new Error(`Invalid JSONB array format: ${jsonError.message}`);
+      console.log(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`); 
     }
 
     // Update the database
