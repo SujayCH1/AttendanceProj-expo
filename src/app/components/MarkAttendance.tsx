@@ -9,7 +9,7 @@ import {
   NativeModules,
   ActivityIndicator 
 } from 'react-native';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
 import { supabase } from '../utils/supabase';
@@ -41,21 +41,16 @@ const MarkAttendance = () => {
   useEffect(() => {
     if (!params.uuid) {
       console.error('No UUID provided');
-      Alert.alert("Error", "Invalid session parameters");
+      Alert.alert('Error', 'Invalid session parameters');
       router.back();
       return;
     }
 
     const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
-    const foundUuidListener = eventEmitter.addListener("foundUuid", (data) => {
+    const foundUuidListener = eventEmitter.addListener('foundUuid', (data) => {
       if (data) {
-        console.log("Student detected:", data);
-        setMarkedStudents(prev => {
-          if (prev.some(student => student.uuid === data)) {
-            return prev;
-          }
-          return [...prev, { uuid: data, timestamp: new Date().toISOString() }];
-        });
+        console.log('Student detected:', data);
+        markStudentAttendance(data); // Mark the student's attendance
       }
     });
 
@@ -65,7 +60,19 @@ const MarkAttendance = () => {
         endSession();
       }
     };
-  }, [params.uuid]);
+  }, [params.uuid, isSessionActive]);
+
+  const markStudentAttendance = (studentUuid: string) => {
+    setMarkedStudents((prev) => {
+      if (prev.some((student) => student.uuid === studentUuid)) {
+        console.log(`Attendance already marked for student: ${studentUuid}`);
+        return prev;
+      }
+      const newStudent = { uuid: studentUuid, timestamp: new Date().toISOString() };
+      console.log(`Attendance marked for student: ${studentUuid}`);
+      return [...prev, newStudent];
+    });
+  };
 
   const startSessionInDB = async () => {
     try {
@@ -76,12 +83,12 @@ const MarkAttendance = () => {
         semester: parseInt(params.semester), // Convert to number
         division: params.division,
         batch: params.batch,
-        session_name: `${params.courseName} (${params.branch} - ${params.semester} - ${params.division})`
+        session_name: `${params.courseName} (${params.branch} - ${params.semester} - ${params.division})`,
       }).select();
-  
+
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('No session data returned');
-  
+
       console.log('Session created:', data[0]);
       setCurrentSessionId(data[0].session_id);
       return data[0].session_id;
@@ -102,7 +109,7 @@ const MarkAttendance = () => {
           await supabase.from('attendance_table').insert({
             session_id: currentSessionId,
             date: new Date().toISOString(),
-            students: markedStudents.map(student => student.uuid)
+            students: markedStudents.map((student) => student.uuid),
           });
         }
       }
@@ -110,7 +117,7 @@ const MarkAttendance = () => {
       await ble.cleanup();
     } catch (error) {
       console.error('Error ending session:', error);
-      Alert.alert("Error", "Failed to save attendance data");
+      Alert.alert('Error', 'Failed to save attendance data');
     }
   };
 
@@ -119,11 +126,11 @@ const MarkAttendance = () => {
 
     try {
       setIsLoading(true);
-      
+
       if (!isSessionActive) {
         const hasPermissions = await ble.requestPermissions();
         if (!hasPermissions) {
-          Alert.alert("Permission Error", "Bluetooth permissions required.");
+          Alert.alert('Permission Error', 'Bluetooth permissions required.');
           return;
         }
 
@@ -134,18 +141,18 @@ const MarkAttendance = () => {
 
         await ble.startAdvertising(params.uuid);
         setIsSessionActive(true);
-        Alert.alert("Session Started", "Students can now mark attendance.");
+        Alert.alert('Session Started', 'Students can now mark attendance.');
       } else {
         await endSession();
         setIsSessionActive(false);
         Alert.alert(
-          "Session Ended", 
-          `Attendance marked for ${markedStudents.length} students.`
+          'Session Ended',
+          `Attendance marked for ${markedStudents.length} students.`,
         );
       }
     } catch (error) {
       console.error('Error during session:', error);
-      Alert.alert("Error", "Failed to manage the attendance session.");
+      Alert.alert('Error', 'Failed to manage the attendance session.');
     } finally {
       setIsLoading(false);
     }
@@ -167,12 +174,12 @@ const MarkAttendance = () => {
           {`Branch: ${params.branch} | Sem: ${params.semester} | Div: ${params.division}`}
         </Text>
       </View>
-      
+
       <TouchableOpacity
         style={[
-          styles.button, 
+          styles.button,
           isSessionActive && styles.activeButton,
-          isLoading && styles.disabledButton
+          isLoading && styles.disabledButton,
         ]}
         onPress={handleMarkAttendance}
         disabled={isLoading}
@@ -209,7 +216,7 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     padding: 16,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f5f5f5',
   },
   header: { 
     marginBottom: 24,
@@ -221,40 +228,40 @@ const styles = StyleSheet.create({
   headerText: { 
     fontSize: 20, 
     fontWeight: 'bold',
-    marginBottom: 8
+    marginBottom: 8,
   },
   subHeader: {
     fontSize: 14,
-    color: '#666'
+    color: '#666',
   },
   button: { 
     padding: 16, 
     backgroundColor: '#007AFF', 
     borderRadius: 8,
-    elevation: 2
+    elevation: 2,
   },
   activeButton: { 
-    backgroundColor: '#FF3B30' 
+    backgroundColor: '#FF3B30',
   },
   disabledButton: {
-    opacity: 0.7
+    opacity: 0.7,
   },
   buttonText: { 
     color: '#FFF', 
     textAlign: 'center',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   studentsContainer: {
     marginTop: 24,
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 8,
-    elevation: 2
+    elevation: 2,
   },
   studentsHeader: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 16
+    marginBottom: 16,
   },
   studentRow: {
     flexDirection: 'row',
@@ -262,16 +269,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    borderBottomColor: '#eee',
   },
   studentText: {
     flex: 1,
-    fontSize: 14
+    fontSize: 14,
   },
   timestampText: {
     fontSize: 12,
-    color: '#666'
-  }
+    color: '#666',
+  },
 });
 
 export default MarkAttendance;
