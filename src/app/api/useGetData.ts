@@ -201,33 +201,38 @@ export const getActiveSessionsForStudent = async (studentInfo) => {
 };
 
 export const insertStudentUUIDinActiveSessions = async (
-  faculty_uuid : String, // Faculty UUID
-  student_uuid : String // Student UUID
+  faculty_uuid : string, // Faculty UUID
+  student_uuid : string// Student UUID
 ) => {
   try {
     // Check if the faculty_uuid exists in the table
     const { data: existingData, error: selectError } = await supabase
       .from('active_sessions')
-      .select('*')
+      .select('student_user_id_array')
       .eq('faculty_user_id', faculty_uuid);
 
     if (selectError) throw selectError;
 
     if (existingData.length > 0) {
-      // Faculty UUID exists, update the row with student_uuid
+      // Faculty UUID exists, append the student_uuid to the array
       const { error: updateError } = await supabase
         .from('active_sessions')
-        .update({ student_user_id: student_uuid })
+        .update({
+          student_user_id_array: supabase.rpc('array_append', {
+            array: existingData[0].student_user_id_array,
+            value: student_uuid,
+          }),
+        })
         .eq('faculty_user_id', faculty_uuid);
 
       if (updateError) throw updateError;
     } else {
-      // Faculty UUID doesn't exist, insert a new row
+      // Faculty UUID doesn't exist, insert a new row with the student_uuid in an array
       const { error: insertError } = await supabase
         .from('active_sessions')
         .insert({
           faculty_user_id: faculty_uuid,
-          student_user_id: student_uuid,
+          student_user_id_array: [student_uuid], // Initialize with the student UUID in an array
         });
 
       if (insertError) throw insertError;
@@ -239,5 +244,6 @@ export const insertStudentUUIDinActiveSessions = async (
     throw error;
   }
 };
+
 
 
