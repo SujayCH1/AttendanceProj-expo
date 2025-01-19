@@ -95,6 +95,7 @@ export default function bleService(): BLEAPI {
 
   const startScanning = async (uuids: string | string[]): Promise<boolean> => {
     try {
+      console.log("UUID TO PASS",uuids);
       setupEventListeners(Array.from(uuids));
       const uuidString = Array.isArray(uuids) ? uuids.join(',') : uuids;
       console.log('Starting scan for UUIDs:', uuidString);
