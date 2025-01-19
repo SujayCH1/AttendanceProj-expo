@@ -40,13 +40,14 @@ const StudentView = () => {
   };
 
   const handleSessionClick = (session) => {
-    console.log("Pushing Data ", "faculty id: ", session.faculty_user_id, "subject id: ", session.subject.subject_id)
+    console.log("Pushing Data ", "faculty id: ", session.faculty_user_id, "subject id: ", session.subject_id)
     router.push({
       pathname: '/components/StudentMarkingAttendance',
       params: {
         sessionId: session.session_id,
         facultyUuid: session.faculty_user_id, 
         subjectName: session.subject.subject_name,
+        subjectID: session.subject_id
       },
     });
   };
