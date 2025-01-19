@@ -69,6 +69,7 @@ export default function bleService(): BLEAPI {
         if(uuids.includes(data)){
           insertStudentUUIDinActiveSessions(data)
           stopScanning();
+          cleanup();
           Alert.alert("Your Attendance Marked Successfully",);
         }
       }),
