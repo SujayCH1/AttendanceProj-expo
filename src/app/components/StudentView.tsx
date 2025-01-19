@@ -44,7 +44,7 @@ const StudentView = () => {
       pathname: '/components/StudentMarkingAttendance',
       params: {
         sessionId: session.session_id,
-        facultyId: session.faculty_id,
+        facultyUuid: session.faculty_user_id, 
         subjectName: session.subject.subject_name,
       },
     });

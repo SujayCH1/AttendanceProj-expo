@@ -15,7 +15,7 @@ import bleService from '../backend/bleSetup';
 import { supabase } from '../utils/supabase';
 
 type RouteParams = {
-  uuid: string;
+  uuid: string; // This is now faculty's user_id
   courseName: string;
   subjectId: string;
   semester: string;
@@ -81,7 +81,7 @@ const MarkAttendance = () => {
   const startSessionInDB = async () => {
     try {
       const { data, error } = await supabase.from('active_sessions').insert({
-        faculty_id: params.uuid,
+        faculty_user_id: params.uuid, // Changed from faculty_id
         subject_id: params.subjectId,
         branch: params.branch,
         semester: params.semester,
@@ -90,7 +90,7 @@ const MarkAttendance = () => {
         session_name: `${params.courseName} (${params.branch} - ${params.semester} - ${params.division})`
       }).select();
 
-      if (error) throw new Error(error.message);
+      if (error) throw error;
       if (!data || data.length === 0) throw new Error('No session data returned');
 
       setCurrentSessionId(data[0].session_id);
