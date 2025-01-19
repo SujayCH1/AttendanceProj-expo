@@ -190,6 +190,9 @@ export const getActiveSessionsForStudent = async (studentInfo) => {
       .is('end_time', null);
 
     if (error) throw error;
+
+    console.log("active session data fetched: ", data)
+
     return data;
   } catch (err) {
     console.error("Error fetching active sessions:", err);
