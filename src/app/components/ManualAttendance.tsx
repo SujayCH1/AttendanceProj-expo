@@ -46,7 +46,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
   const [error, setError] = useState<string | null>(null);
   const [semId, setSemId] = useState<string | null>(null);
   const params = useLocalSearchParams<RouteParams>();
-    console.log("Faculty Id :",facultyId);
+    console.log("Faculty Id :",params.facultyId);
     
 
     useEffect(() => {
@@ -56,6 +56,8 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
         
         try {
           const id = await fetchSemId(params); // Assuming fetchSemId takes facultyId as parameter
+          console.log("ID from manual :",id);
+          
           setSemId(id);
           
           // Only initialize attendance after we have the semId
@@ -63,7 +65,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
             await initializeAttendance(id);
           }
         } catch (err) {
-          setError('Failed to fetch semester ID');
+          setError('Failed to fetch semester ID');0
           console.error('Error fetching semId:', err);
         }
       };

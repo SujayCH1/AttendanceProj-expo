@@ -274,15 +274,7 @@ export const getAllStudentsFromDB = async (semID: string, faculty_id: string) =>
   try{
     const { data, error } = await supabase
     .from('student_info')
-    .select(`
-      prn,
-      name,
-      semester,
-      branch,
-      division,
-      batch,
-      user_id,
-      dlo`)
+    .select("*")
       .eq('user_id',faculty_id)
       .eq('sem_id',semID);
       if (error) throw error;
@@ -297,17 +289,19 @@ export const getAllStudentsFromDB = async (semID: string, faculty_id: string) =>
 export const fetchSemId = async (params): Promise<string | null> => {
   try {
     console.log("Params from useGetData :",params);
+    let sem : number = params.semester
+    console.log("Sem Check :",sem);
     
     const { data, error } = await supabase
       .from('sem_info')
       .select('sem_id')
-      .eq('semester', parseInt(params.semester))
+      .eq('semester', sem)
       .eq('branch', params.branch)
       .eq('division', params.division)
       .eq('batch', params.batch)
       .eq('subject_id', params.subjectId)
-      .eq('faculty_id', params.uuid)
-      .single();
+      .eq('faculty_id', params.facultyId)
+      
 
     if (error) {
       console.error('Error fetching sem_id:', error.message);
@@ -318,8 +312,10 @@ export const fetchSemId = async (params): Promise<string | null> => {
       console.log('No sem_id found for given parameters');
       return null;
     }
+    console.log("Sem id from getData :",data[0].sem_id);
+    
+    return data[0].sem_id;
 
-    return data.sem_id;
   } catch (err) {
     console.error('Unexpected error fetching sem_id:', err);
     return null;
