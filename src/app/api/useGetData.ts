@@ -201,11 +201,11 @@ export const getActiveSessionsForStudent = async (studentInfo) => {
 };
 
 export const insertStudentUUIDinActiveSessions = async (
-  faculty_uuid : string, // Faculty UUID
-  student_uuid : string// Student UUID
+  faculty_uuid: string, // Faculty UUID
+  student_uuid: string // Student UUID
 ) => {
   try {
-    // Check if the faculty_uuid exists in the table
+    // Fetch existing data for the given faculty UUID
     const { data: existingData, error: selectError } = await supabase
       .from('active_sessions')
       .select('student_user_id_array')
@@ -213,21 +213,20 @@ export const insertStudentUUIDinActiveSessions = async (
 
     if (selectError) throw selectError;
 
-    if (existingData.length > 0) {
-      // Faculty UUID exists, append the student_uuid to the array
-      const { error: updateError } = await supabase
-        .from('active_sessions')
-        .update({
-          student_user_id_array: supabase.rpc('array_append', {
-            array: existingData[0].student_user_id_array,
-            value: student_uuid,
-          }),
-        })
-        .eq('faculty_user_id', faculty_uuid);
+    if (existingData && existingData.length > 0) {
+      // Faculty UUID exists; append the student_uuid to the array
+      const currentArray = existingData[0].student_user_id_array || [];
+      if (!currentArray.includes(student_uuid)) {
+        currentArray.push(student_uuid); // Append student_uuid if not already present
+        const { error: updateError } = await supabase
+          .from('active_sessions')
+          .update({ student_user_id_array: currentArray })
+          .eq('faculty_user_id', faculty_uuid);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      }
     } else {
-      // Faculty UUID doesn't exist, insert a new row with the student_uuid in an array
+      // Faculty UUID doesn't exist; insert a new row
       const { error: insertError } = await supabase
         .from('active_sessions')
         .insert({
@@ -244,6 +243,7 @@ export const insertStudentUUIDinActiveSessions = async (
     throw error;
   }
 };
+
 
 
 
