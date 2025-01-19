@@ -25,13 +25,22 @@ const StudentMarkingAttendance = () => {
         const { data, error } = await supabase
           .from('active_sessions')
           .select('*')
-          .eq('faculty_user_id', params.facultyUuid) 
+          .eq('faculty_user_id', params.facultyUuid)
           .eq('subject_id', params.subjectId)
-          .is('end_time', null)
-          .single();
+          .is('end_time', null);
 
-        if (error) throw error;
-        setActiveSession(data);
+        if (error) {
+          console.error('Error checking active session:', error);
+          return;
+        }
+
+        if (data && data.length === 1) {
+          setActiveSession(data[0]);
+        } else if (data.length > 1) {
+          console.error('Multiple active sessions found. Expected one.');
+        } else {
+          setActiveSession(null); // No active session found
+        }
       } catch (error) {
         console.error('Error checking active session:', error);
       }
@@ -117,7 +126,7 @@ const StudentMarkingAttendance = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Mark Attendance</Text>
       <Text style={styles.subjectName}>{params.subjectName}</Text>
-      
+
       {activeSession ? (
         <Text style={styles.sessionStatus}>Session Active</Text>
       ) : (
