@@ -79,6 +79,9 @@ export default function bleService(): BLEAPI {
 
           insertStudentUUIDinActiveSessions(data.uuid, student_uuid);
 
+          console.log("BLE setup student_uuid :", student_uuid);
+          
+
           stopScanning();
           cleanup();
         } catch (error) {
