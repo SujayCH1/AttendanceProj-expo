@@ -158,6 +158,10 @@ const MarkAttendance = () => {
     }
   };
 
+  const navigateToManualAttendance = () => {
+    router.push('/components/ManualAttendance');
+  };
+
   if (!params.uuid) {
     return (
       <View style={styles.container}>
@@ -191,6 +195,13 @@ const MarkAttendance = () => {
             {isSessionActive ? 'Stop Session' : 'Start Session'}
           </Text>
         )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, styles.manualButton]}
+        onPress={navigateToManualAttendance}
+      >
+        <Text style={styles.buttonText}>Manual Attendance</Text>
       </TouchableOpacity>
 
       <View style={styles.studentsContainer}>
@@ -239,6 +250,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF', 
     borderRadius: 8,
     elevation: 2,
+    marginBottom: 12,
   },
   activeButton: { 
     backgroundColor: '#FF3B30',
@@ -250,6 +262,9 @@ const styles = StyleSheet.create({
     color: '#FFF', 
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  manualButton: {
+    backgroundColor: '#4CAF50',
   },
   studentsContainer: {
     marginTop: 24,
