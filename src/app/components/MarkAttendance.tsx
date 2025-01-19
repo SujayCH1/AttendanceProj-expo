@@ -15,6 +15,7 @@ import bleService from '../backend/bleSetup';
 import { supabase } from '../utils/supabase';
 
 type RouteParams = {
+  facultyId: string;
   uuid: string;
   courseName: string;
   subjectId: string;
@@ -159,7 +160,19 @@ const MarkAttendance = () => {
   };
 
   const navigateToManualAttendance = () => {
-    router.push('/components/ManualAttendance');
+    router.push({
+      pathname: '/components/ManualAttendance',
+      params: {
+        facultyId: params.facultyId,
+        uuid: params.uuid,
+        courseName: params.courseName,
+        subjectId: params.subjectId,
+        semester: params.semester,
+        branch: params.branch,
+        division: params.division,
+        batch: params.batch
+      }
+    });
   };
 
   if (!params.uuid) {

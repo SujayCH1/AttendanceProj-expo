@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import { supabase } from "../utils/supabase";
 
+
 let currentUUID: string | null = null
 
 
@@ -293,3 +294,34 @@ export const getAllStudentsFromDB = async (semID: string, faculty_id: string) =>
   }
 }
 
+export const fetchSemId = async (params): Promise<string | null> => {
+  try {
+    console.log("Params from useGetData :",params);
+    
+    const { data, error } = await supabase
+      .from('sem_info')
+      .select('sem_id')
+      .eq('semester', parseInt(params.semester))
+      .eq('branch', params.branch)
+      .eq('division', params.division)
+      .eq('batch', params.batch)
+      .eq('subject_id', params.subjectId)
+      .eq('faculty_id', params.uuid)
+      .single();
+
+    if (error) {
+      console.error('Error fetching sem_id:', error.message);
+      return null;
+    }
+
+    if (!data) {
+      console.log('No sem_id found for given parameters');
+      return null;
+    }
+
+    return data.sem_id;
+  } catch (err) {
+    console.error('Unexpected error fetching sem_id:', err);
+    return null;
+  }
+};
