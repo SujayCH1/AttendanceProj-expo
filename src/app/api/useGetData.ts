@@ -200,4 +200,16 @@ export const getActiveSessionsForStudent = async (studentInfo) => {
   }
 };
 
+  export const insertStudentUUIDinActiveSessions = (
+    uuid: String
+  ) => {
+    try {
+      supabase.from('active_sessions').insert({
+        student_user_id: uuid,
+      }).select();
+    } catch (error) {
+      console.error('Error Inserting Data', error);
+      throw error;
+    }
+  };
 

@@ -1,6 +1,7 @@
 import { PermissionsAndroid, Alert, Platform } from "react-native";
 import { NativeEventEmitter, NativeModules } from "react-native";
 import { advertiseStart, advertiseStop, scanStart, scanStop } from "react-native-ble-phone-to-phone";
+import { insertStudentUUIDinActiveSessions } from "../api/useGetData";
 
 interface BLEListeners {
   foundUuid?: ReturnType<typeof NativeEventEmitter.prototype.addListener>;
@@ -55,7 +56,7 @@ export default function bleService(): BLEAPI {
     }
   };
 
-  const setupEventListeners = () => {
+  const setupEventListeners = (uuids: string[]) => {
     if (!eventEmitter) {
       eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
     }
@@ -65,6 +66,11 @@ export default function bleService(): BLEAPI {
     listeners = {
       foundUuid: eventEmitter.addListener("foundUuid", (data) => {
         console.log("Found UUID:", data);
+        if(uuids.includes(data)){
+          insertStudentUUIDinActiveSessions(data)
+          stopScanning();
+          Alert.alert("Your Attendance Marked Successfully",);
+        }
       }),
 
       foundDevice: eventEmitter.addListener("foundDevice", (data) => {
@@ -88,7 +94,7 @@ export default function bleService(): BLEAPI {
 
   const startScanning = async (uuids: string | string[]): Promise<boolean> => {
     try {
-      setupEventListeners();
+      setupEventListeners(Array.from(uuids));
       const uuidString = Array.isArray(uuids) ? uuids.join(',') : uuids;
       console.log('Starting scan for UUIDs:', uuidString);
       await scanStart(uuidString);
