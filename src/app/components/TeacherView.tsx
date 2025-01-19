@@ -25,6 +25,7 @@ const TeacherView = () => {
       console.error('No user ID found for faculty');
       return;
     }
+
     
     router.push({
       pathname: '/components/MarkAttendance',
