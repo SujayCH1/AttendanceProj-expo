@@ -48,7 +48,7 @@ const StudentView = () => {
         facultyUuid: session.faculty_user_id, 
         subjectName: session.subject.subject_name,
         subjectID: session.subject_id,
-        studebt_uuid: studentInfo.user_id
+        student_uuid: studentInfo.user_id
       },
     });
   };
