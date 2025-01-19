@@ -237,8 +237,7 @@ export const insertStudentUUIDinActiveSessions = async (
     try {
       JSON.parse(JSON.stringify(updatedArray));
     } catch (jsonError) {
-      console.log(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
-      
+      console.log(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`); 
     }
 
     // Update the database
