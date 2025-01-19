@@ -77,7 +77,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
           // Fetch all students and present students
           const [allStudents, presentData] = await Promise.all([
             getAllStudentsFromDB(currentSemId, facultyId) as Promise<StudentInfo[]>,
-            getPresentStudentsFromDB(facultyId) as Promise<PresentStudentsData[]>
+            getPresentStudentsFromDB(params.uuid) as Promise<PresentStudentsData[]>
           ]);
     
           // Extract the array of present student IDs

@@ -208,7 +208,7 @@ export const insertStudentUUIDinActiveSessions = async (
   try {
     // Validate input
     if (typeof faculty_uuid !== "string" || typeof student_uuid !== "string") {
-      throw new Error(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
+      console.log(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
     }
 
     // Fetch the current array for the given faculty_uuid
@@ -229,21 +229,30 @@ export const insertStudentUUIDinActiveSessions = async (
         updatedArray.push(student_uuid);
       }
     } else {
-      // Create a new array if none exists
-      updatedArray = [student_uuid];
+      // Create a new array if none exists, ensuring proper JSONB format
+      updatedArray = JSON.parse(JSON.stringify([student_uuid]));
+    }
+
+    // Validate that the array can be properly serialized as JSONB
+    try {
+      JSON.parse(JSON.stringify(updatedArray));
+    } catch (jsonError) {
+      console.log(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
+      
     }
 
     // Update the database
     const { error: updateError } = await supabase
       .from("active_sessions")
       .update({
-        student_user_id_array: updatedArray, // Ensure JSON array
+        student_user_id_array: updatedArray,
       })
       .eq("faculty_user_id", faculty_uuid);
 
     if (updateError) throw updateError;
 
     console.log("Updated student_user_id_array successfully:", updatedArray);
+    return { success: true, updatedArray };
   } catch (error) {
     console.error("Error Inserting/Updating Data:", error);
     throw error;
