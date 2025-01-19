@@ -62,22 +62,27 @@ export const fetchFacultyInfo = async () => {
   try {
     const { data, error } = await supabase
       .from("faculty")
-      .select("*")
+      .select("*, user_id") // Make sure to select user_id
       .eq("user_id", currentUUID)
+      .single();
 
     if (error) {
-      console.log("Error fetching teacher info:", error.message)
+      console.log("Error fetching teacher info:", error.message);
+      return null;
     }
 
-    if (data && data.length > 0) {
-      return data[0];
+    if (data) {
+      return {
+        ...data,
+        user_id: data.user_id // Ensure user_id is included
+      };
     } else {
-      console.log("No student info found for the given UUID");
+      console.log("No faculty info found for the given UUID");
       return null;
     }
   } catch (err) {
-    console.error("Unexcpected error: ", err)
-    return null
+    console.error("Unexpected error: ", err);
+    return null;
   }
 };
 
@@ -150,7 +155,10 @@ export const getTeacherSubjects = async (facultyId) => {
       .from('sem_info')
       .select(`
         *,
-        subject:subject_id (subject_name)
+        subject:subject_id (
+          subject_id,
+          subject_name
+        )
       `)
       .eq('faculty_id', facultyId);
 
@@ -158,6 +166,7 @@ export const getTeacherSubjects = async (facultyId) => {
     
     return data.map(item => ({
       ...item,
+      subject_id: item.subject.subject_id,
       subject_name: item.subject.subject_name
     }));
   } catch (err) {

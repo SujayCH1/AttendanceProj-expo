@@ -21,10 +21,15 @@ const TeacherView = () => {
   }, [user]);
 
   const handleSessionClick = (subject) => {
+    if (!facultyInfo?.user_id) {
+      console.error('No user ID found for faculty');
+      return;
+    }
+    
     router.push({
       pathname: '/components/MarkAttendance',
       params: {
-        uuid: facultyInfo.faculty_id, // Use faculty_id instead of user_id if needed for attendance
+        uuid: facultyInfo.user_id, // Use user_id instead of faculty_id
         subjectId: subject.subject_id,
         courseName: subject.subject_name,
         branch: subject.branch,

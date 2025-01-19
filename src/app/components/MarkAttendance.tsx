@@ -15,7 +15,7 @@ import bleService from '../backend/bleSetup';
 import { supabase } from '../utils/supabase';
 
 type RouteParams = {
-  uuid: string; // This is now faculty's user_id
+  uuid: string;
   courseName: string;
   subjectId: string;
   semester: string;
@@ -38,16 +38,6 @@ const MarkAttendance = () => {
   const [isLoading, setIsLoading] = useState(false);
   const ble = bleService();
 
-  const handleBleError = useCallback((error: Error) => {
-    console.error('BLE Error:', error);
-    Alert.alert(
-      "Bluetooth Error",
-      "There was an issue with the Bluetooth connection. Please ensure Bluetooth is enabled and try again."
-    );
-    setIsSessionActive(false);
-    ble.stopAdvertising();
-  }, []);
-
   useEffect(() => {
     if (!params.uuid) {
       console.error('No UUID provided');
@@ -61,7 +51,6 @@ const MarkAttendance = () => {
       if (data) {
         console.log("Student detected:", data);
         setMarkedStudents(prev => {
-          // Prevent duplicate entries
           if (prev.some(student => student.uuid === data)) {
             return prev;
           }
@@ -76,28 +65,29 @@ const MarkAttendance = () => {
         endSession();
       }
     };
-  }, [params.uuid, isSessionActive]);
+  }, [params.uuid]);
 
   const startSessionInDB = async () => {
     try {
       const { data, error } = await supabase.from('active_sessions').insert({
-        faculty_user_id: params.uuid, // Changed from faculty_id
+        faculty_user_id: params.uuid, // This should now be the actual UUID
         subject_id: params.subjectId,
         branch: params.branch,
-        semester: params.semester,
+        semester: parseInt(params.semester), // Convert to number
         division: params.division,
         batch: params.batch,
         session_name: `${params.courseName} (${params.branch} - ${params.semester} - ${params.division})`
       }).select();
-
+  
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('No session data returned');
-
+  
+      console.log('Session created:', data[0]);
       setCurrentSessionId(data[0].session_id);
       return data[0].session_id;
     } catch (error) {
       console.error('Error creating session:', error);
-      throw new Error('Failed to create session in database');
+      throw error;
     }
   };
 
@@ -108,7 +98,6 @@ const MarkAttendance = () => {
           .update({ end_time: new Date().toISOString() })
           .eq('session_id', currentSessionId);
 
-        // Save attendance records
         if (markedStudents.length > 0) {
           await supabase.from('attendance_table').insert({
             session_id: currentSessionId,
@@ -117,8 +106,8 @@ const MarkAttendance = () => {
           });
         }
       }
-      ble.stopAdvertising();
-      ble.cleanup();
+      await ble.stopAdvertising();
+      await ble.cleanup();
     } catch (error) {
       console.error('Error ending session:', error);
       Alert.alert("Error", "Failed to save attendance data");
@@ -126,6 +115,8 @@ const MarkAttendance = () => {
   };
 
   const handleMarkAttendance = async () => {
+    if (isLoading) return;
+
     try {
       setIsLoading(true);
       

@@ -1,4 +1,3 @@
-// bleService.ts
 import { PermissionsAndroid, Alert, Platform } from "react-native";
 import { NativeEventEmitter, NativeModules } from "react-native";
 import { advertiseStart, advertiseStop, scanStart, scanStop } from "react-native-ble-phone-to-phone";
@@ -12,10 +11,10 @@ interface BLEListeners {
 
 interface BLEAPI {
   requestPermissions(): Promise<boolean>;
-  startScanning(uuids: string | string[]): void;
+  startScanning(uuids: string | string[]): Promise<boolean>;
   stopScanning(): void;
-  startAdvertising(uuid: string): void;
-  stopAdvertising(): void;
+  startAdvertising(uuid: string): Promise<void>;
+  stopAdvertising(): Promise<void>;
   cleanup(): void;
 }
 
@@ -61,17 +60,11 @@ export default function bleService(): BLEAPI {
       eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
     }
 
-    // Remove existing listeners before adding new ones
     cleanup();
 
     listeners = {
       foundUuid: eventEmitter.addListener("foundUuid", (data) => {
         console.log("Found UUID:", data);
-        Alert.alert(
-          "Attendance Marked",
-          "Your attendance has been recorded successfully!",
-          [{ text: "OK" }]
-        );
       }),
 
       foundDevice: eventEmitter.addListener("foundDevice", (data) => {
@@ -93,11 +86,17 @@ export default function bleService(): BLEAPI {
     };
   };
 
-  const startScanning = (uuids: string | string[]): void => {
-    setupEventListeners();
-    const uuidString = Array.isArray(uuids) ? uuids.join(',') : uuids;
-    console.log('Starting scan for UUIDs:', uuidString);
-    scanStart(uuidString);
+  const startScanning = async (uuids: string | string[]): Promise<boolean> => {
+    try {
+      setupEventListeners();
+      const uuidString = Array.isArray(uuids) ? uuids.join(',') : uuids;
+      console.log('Starting scan for UUIDs:', uuidString);
+      await scanStart(uuidString);
+      return true;
+    } catch (error) {
+      console.error('Error starting scan:', error);
+      return false;
+    }
   };
 
   const stopScanning = (): void => {
@@ -105,26 +104,23 @@ export default function bleService(): BLEAPI {
     scanStop();
   };
 
-  const startAdvertising = async (uuid: string): void => {
+  const startAdvertising = async (uuid: string): Promise<void> => {
     try {
       console.log('Starting advertisement with UUID:', uuid);
       await advertiseStart(uuid);
     } catch (error) {
       console.error('Error starting advertisement:', error);
-      Alert.alert(
-        "Error",
-        "Failed to start Bluetooth advertising. Please try again.",
-        [{ text: "OK" }]
-      );
+      throw new Error('Failed to start Bluetooth advertising');
     }
   };
 
-  const stopAdvertising = async (): void => {
+  const stopAdvertising = async (): Promise<void> => {
     try {
       console.log('Stopping advertisement');
       await advertiseStop();
     } catch (error) {
       console.error('Error stopping advertisement:', error);
+      throw error;
     }
   };
 
