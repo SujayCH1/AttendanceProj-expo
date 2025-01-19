@@ -56,7 +56,7 @@ export default function bleService(): BLEAPI {
     }
   };
 
-  const setupEventListeners = (uuids: string[]) => {
+  const setupEventListeners = (uuids: string[], student_uuid : String) => {
     if (!eventEmitter) {
       eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
     }
@@ -66,12 +66,9 @@ export default function bleService(): BLEAPI {
     listeners = {
       foundUuid: eventEmitter.addListener("foundUuid", (data) => {
         console.log("Found UUID:", data);
-        if(uuids.includes(data)){
-          insertStudentUUIDinActiveSessions(data)
+        Alert.alert("Your Attendance Marked Successfully",);
+          insertStudentUUIDinActiveSessions(data, student_uuid);
           stopScanning();
-          cleanup();
-          Alert.alert("Your Attendance Marked Successfully",);
-        }
       }),
 
       foundDevice: eventEmitter.addListener("foundDevice", (data) => {
@@ -93,10 +90,12 @@ export default function bleService(): BLEAPI {
     };
   };
 
-  const startScanning = async (uuids: string | string[]): Promise<boolean> => {
+  const startScanning = async (
+    uuids: string | string[],
+    student_uuid : String): Promise<boolean> => {
     try {
       console.log("UUID TO PASS",uuids);
-      setupEventListeners(Array.from(uuids));
+      setupEventListeners(Array.from(uuids), student_uuid);
       const uuidString = Array.isArray(uuids) ? uuids.join(',') : uuids;
       console.log('Starting scan for UUIDs:', uuidString);
       await scanStart(uuidString);

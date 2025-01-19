@@ -8,6 +8,7 @@ type RouteParams = {
   facultyUuid: string; // Changed from facultyId
   subjectName: string;
   subjectId: string;
+  student_uuid: string;
 };
 
 const StudentMarkingAttendance = () => {
@@ -76,7 +77,7 @@ const StudentMarkingAttendance = () => {
           return;
         }
 
-        const startScan = await ble.startScanning(params.facultyUuid); // Changed to use UUID
+        const startScan = await ble.startScanning(params.facultyUuid, params.student_uuid); // Changed to use UUID
         if (!startScan) {
           throw new Error('Failed to start scanning');
         }

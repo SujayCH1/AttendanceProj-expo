@@ -200,18 +200,44 @@ export const getActiveSessionsForStudent = async (studentInfo) => {
   }
 };
 
-  export const insertStudentUUIDinActiveSessions = async (
-    uuid: String
-  ) => {
-    try {
-      const { data, error } = await supabase.from('active_sessions').insert({
-        student_user_id: uuid,
-      }).select();
+export const insertStudentUUIDinActiveSessions = async (
+  faculty_uuid : String, // Faculty UUID
+  student_uuid : String // Student UUID
+) => {
+  try {
+    // Check if the faculty_uuid exists in the table
+    const { data: existingData, error: selectError } = await supabase
+      .from('active_sessions')
+      .select('*')
+      .eq('faculty_user_id', faculty_uuid);
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error Inserting Data', error);
-      throw error;
+    if (selectError) throw selectError;
+
+    if (existingData.length > 0) {
+      // Faculty UUID exists, update the row with student_uuid
+      const { error: updateError } = await supabase
+        .from('active_sessions')
+        .update({ student_user_id: student_uuid })
+        .eq('faculty_user_id', faculty_uuid);
+
+      if (updateError) throw updateError;
+    } else {
+      // Faculty UUID doesn't exist, insert a new row
+      const { error: insertError } = await supabase
+        .from('active_sessions')
+        .insert({
+          faculty_user_id: faculty_uuid,
+          student_user_id: student_uuid,
+        });
+
+      if (insertError) throw insertError;
     }
-  };
+
+    console.log('Operation successful');
+  } catch (error) {
+    console.error('Error Inserting/Updating Data:', error);
+    throw error;
+  }
+};
+
 
