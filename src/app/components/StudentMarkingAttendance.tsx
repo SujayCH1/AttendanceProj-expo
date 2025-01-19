@@ -76,7 +76,8 @@ const StudentMarkingAttendance = () => {
           Alert.alert("Permission Error", "Bluetooth permissions required");
           return;
         }
-
+        
+        
         const startScan = await ble.startScanning(params.facultyUuid, params.student_uuid); // Changed to use UUID
         if (!startScan) {
           throw new Error('Failed to start scanning');

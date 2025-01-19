@@ -205,45 +205,49 @@ export const insertStudentUUIDinActiveSessions = async (
   student_uuid: string // Student UUID
 ) => {
   try {
-    // Fetch existing data for the given faculty UUID
+    // Validate input
+    if (typeof faculty_uuid !== "string" || typeof student_uuid !== "string") {
+      throw new Error(`Invalid UUID format. Faculty: ${faculty_uuid}, Student: ${student_uuid}`);
+    }
+
+    // Fetch the current array for the given faculty_uuid
     const { data: existingData, error: selectError } = await supabase
-      .from('active_sessions')
-      .select('student_user_id_array')
-      .eq('faculty_user_id', faculty_uuid);
+      .from("active_sessions")
+      .select("student_user_id_array")
+      .eq("faculty_user_id", faculty_uuid)
+      .single();
 
     if (selectError) throw selectError;
 
-    if (existingData && existingData.length > 0) {
-      // Faculty UUID exists; append the student_uuid to the array
-      const currentArray = existingData[0].student_user_id_array || [];
-      if (!currentArray.includes(student_uuid)) {
-        currentArray.push(student_uuid); // Append student_uuid if not already present
-        const { error: updateError } = await supabase
-          .from('active_sessions')
-          .update({ student_user_id_array: currentArray })
-          .eq('faculty_user_id', faculty_uuid);
+    let updatedArray = []; // Initialize array
 
-        if (updateError) throw updateError;
+    if (existingData?.student_user_id_array) {
+      // Append new UUID, avoiding duplicates
+      updatedArray = [...existingData.student_user_id_array];
+      if (!updatedArray.includes(student_uuid)) {
+        updatedArray.push(student_uuid);
       }
     } else {
-      // Faculty UUID doesn't exist; insert a new row
-      const { error: insertError } = await supabase
-        .from('active_sessions')
-        .insert({
-          faculty_user_id: faculty_uuid,
-          student_user_id_array: [student_uuid], // Initialize with the student UUID in an array
-        });
-
-      if (insertError) throw insertError;
+      // Create a new array if none exists
+      updatedArray = [student_uuid];
     }
 
-    console.log('Operation successful');
+    // Update the database
+    const { error: updateError } = await supabase
+      .from("active_sessions")
+      .update({
+        student_user_id_array: updatedArray, // Ensure JSON array
+      })
+      .eq("faculty_user_id", faculty_uuid);
+
+    if (updateError) throw updateError;
+
+    console.log("Updated student_user_id_array successfully:", updatedArray);
   } catch (error) {
-    console.error('Error Inserting/Updating Data:', error);
+    console.error("Error Inserting/Updating Data:", error);
     throw error;
   }
 };
-
 
 
 
