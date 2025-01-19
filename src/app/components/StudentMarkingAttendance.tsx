@@ -28,12 +28,14 @@ const StudentMarkingAttendance = () => {
           .eq('faculty_user_id', params.facultyUuid)
           .eq('subject_id', params.subjectId)
           .is('end_time', null);
-
+    
         if (error) {
           console.error('Error checking active session:', error);
           return;
         }
-
+    
+        console.log('Active session data:', data);
+    
         if (data && data.length === 1) {
           setActiveSession(data[0]);
         } else if (data.length > 1) {
@@ -45,6 +47,7 @@ const StudentMarkingAttendance = () => {
         console.error('Error checking active session:', error);
       }
     };
+    
 
     const interval = setInterval(checkActiveSession, 5000); // Check every 5 seconds
     checkActiveSession(); // Initial check
@@ -121,6 +124,17 @@ const StudentMarkingAttendance = () => {
       console.error('Error deleting ended session:', error);
     }
   };
+
+  useEffect(() => {
+    if (activeSession) {
+      console.log('Session is active:', activeSession);
+    } else {
+      console.log('No active session');
+    }
+  }, [activeSession]);
+  
+
+  
 
   return (
     <View style={styles.container}>
