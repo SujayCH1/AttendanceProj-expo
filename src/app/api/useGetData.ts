@@ -326,3 +326,61 @@ export const fetchSemId = async (params): Promise<string | null> => {
     return null;
   }
 };
+
+
+export const moveAttendanceToMainTable = async (sessionId) => {
+  // Fetch data from active_sessions
+  const { data, error } = await supabase
+    .from('active_sessions')
+    .select('session_id, faculty_user_id, student_user_id_array, start_time, subject_id') // Adjusted fields
+    .eq('session_id', sessionId);
+
+  if (error) {
+    console.error('Error fetching data from active_sessions:', error);
+    return { success: false, error };
+  }
+
+  if (!data || data.length === 0) {
+    console.warn('No session found with the given session_id:', sessionId);
+    return { success: false, message: 'No session found' };
+  }
+
+  const sessionData = data[0];
+
+  // Map data to match attendance_table schema
+  const attendanceData = {
+    sem_id: sessionData.subject_id, // Assuming subject_id acts as sem_id; adapt as needed
+    date: sessionData.start_time,
+    session_id: sessionData.session_id,
+    faculty_uuid: sessionData.faculty_user_id,
+    student_list: sessionData.student_user_id_array,
+  };
+
+  // Insert into attendance_table
+  const { error: insertError } = await supabase
+    .from('attendance_table')
+    .insert(attendanceData);
+
+  if (insertError) {
+    console.error('Error inserting data into attendance_table:', insertError);
+    return { success: false, error: insertError };
+  }
+
+  return { success: true };
+};
+
+
+// Query 2: Delete session from teacher table
+export const deleteSessionFromTeacherTable = async (sessionId) => {
+  const { error } = await supabase
+    .from('teacher_table') // Replace with the actual teacher table name
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (error) {
+    console.error('Error deleting session from teacher_table:', error);
+    return { success: false, error };
+  }
+
+  return { success: true };
+};
