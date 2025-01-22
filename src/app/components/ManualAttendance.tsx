@@ -1,106 +1,69 @@
-// types.ts
-export interface StudentInfo {
-  prn: string;
-  name: string;
-  semester: string;
-  branch: string;
-  division: string;
-  batch: string;
-  user_id: string;
-  dlo: string;
-}
-
-export interface PresentStudentsData {
-  student_user_id_array: string[];
-}
-
-export interface AttendanceRecord extends StudentInfo {
-  status: 'Present' | 'Absent';
-}
-type RouteParams = {
-  facultyId: string;
-  uuid: string;
-  courseName: string;
-  subjectId: string;
-  semester: string;
-  branch: string;
-  division: string;
-  batch: string;
-};
-// ManualAttendance.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { getPresentStudentsFromDB, getAllStudentsFromDB, fetchSemId } from '../api/useGetData'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { getPresentStudentsFromDB, getAllStudentsFromDB, fetchSemId } from '../api/useGetData';
 import { useLocalSearchParams } from 'expo-router';
-
+import { supabase } from '../utils/supabase';
+import bleService from '../backend/bleSetup';
+import { moveAttendanceToMainTable, deleteSessionFromTeacherTable } from '../api/useGetData';
 
 interface ManualAttendanceProps {
   facultyId: string;
-  
 }
 
+type RouteParams = {
+  sessionId: string;
+}
 
 const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [semId, setSemId] = useState<string | null>(null);
+  const [markedStudents, setMarkedStudents] = useState<string[]>([]);
   const params = useLocalSearchParams<RouteParams>();
-    console.log("Faculty Id :",params.facultyId);
-    
+  const ble = bleService();
 
-    useEffect(() => {
-      // Create an async function to fetch the semId
-      const getSemId = async () => {
-        console.log("Params :",params);
-        
-        try {
-          const id = await fetchSemId(params); // Assuming fetchSemId takes facultyId as parameter
-          console.log("ID from manual :",id);
-          
-          setSemId(id);
-          
-          // Only initialize attendance after we have the semId
-          if (id) {
-            await initializeAttendance(id);
-          }
-        } catch (err) {
-          setError('Failed to fetch semester ID');0
-          console.error('Error fetching semId:', err);
+  useEffect(() => {
+    const getSemId = async () => {
+      try {
+        const id = await fetchSemId(params);
+        setSemId(id);
+        if (id) {
+          await initializeAttendance(id);
         }
-      };
+      } catch (err) {
+        setError('Failed to fetch semester ID');
+        console.error('Error fetching semId:', err);
+      }
+    };
     
-      // Separate the attendance initialization logic
-      const initializeAttendance = async (currentSemId: string) => {
-        try {
-          setLoading(true);
-          // Fetch all students and present students
-          const [allStudents, presentData] = await Promise.all([
-            getAllStudentsFromDB(currentSemId, facultyId) as Promise<StudentInfo[]>,
-            getPresentStudentsFromDB(params.uuid) as Promise<PresentStudentsData[]>
-          ]);
+    const initializeAttendance = async (currentSemId: string) => {
+      try {
+        setLoading(true);
+        const [allStudents, presentData] = await Promise.all([
+          getAllStudentsFromDB(currentSemId, facultyId) as Promise<StudentInfo[]>,
+          getPresentStudentsFromDB(params.uuid) as Promise<PresentStudentsData[]>
+        ]);
     
-          // Extract the array of present student IDs
-          const presentStudentIds = presentData?.[0]?.student_user_id_array || [];
+        const presentStudentIds = presentData?.[0]?.student_user_id_array || [];
+        setMarkedStudents(presentStudentIds);
+
+        const initialAttendance = allStudents?.map(student => ({
+          ...student,
+          status: presentStudentIds.includes(student.user_id) ? 'Present' : 'Absent'
+        })) || [];
     
-          // Map all students to include their attendance status
-          const initialAttendance = allStudents?.map(student => ({
-            ...student,
-            status: presentStudentIds.includes(student.user_id) ? 'Present' : 'Absent'
-          })) || [];
+        setAttendance(initialAttendance);
+      } catch (err) {
+        setError('Failed to load attendance data');
+        console.error('Error loading attendance:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-          setAttendance(initialAttendance);
-        } catch (err) {
-          setError('Failed to load attendance data');
-          console.error('Error loading attendance:', err);
-        } finally {
-          setLoading(false);
-        }
-      };
-    
-      // Call the function to fetch semId
-      getSemId();
-    }, [facultyId]); 
+    getSemId();
+  }, [facultyId]);
 
   const handleStatusChange = (userId: string, status: 'Present' | 'Absent'): void => {
     setAttendance((prev) =>
@@ -108,6 +71,63 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
         student.user_id === userId ? { ...student, status } : student
       )
     );
+
+    if (status === 'Present') {
+      setMarkedStudents(prev => [...new Set([...prev, userId])]);
+    } else {
+      setMarkedStudents(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  const handleEndSession = async (sessionId: string) => {
+    try {
+      const moveResult = await moveAttendanceToMainTable(sessionId);
+      if (!moveResult.success) {
+        console.error('Failed to move attendance data:', moveResult.error || moveResult.message);
+        return;
+      }
+  
+      const deleteResult = await deleteSessionFromTeacherTable(sessionId);
+      if (!deleteResult.success) {
+        console.error('Failed to delete session:', deleteResult.error);
+        return;
+      }
+    } catch (error) {
+      console.error('Error handling session end:', error);
+    }
+  };
+
+  const endSession = (currentSessionId: string) => {
+    try {
+      if (currentSessionId) {
+        supabase
+          .from('active_sessions')
+          .update({ end_time: new Date().toISOString() })
+          .eq('session_id', currentSessionId);
+  
+        if (markedStudents.length > 0) {
+          supabase.from('attendance_table').insert({
+            session_id: currentSessionId,
+            date: new Date().toISOString(),
+            student_list: markedStudents,
+          });
+        }
+      }
+  
+     ble.stopAdvertising();
+     ble.cleanup();
+     handleEndSession(currentSessionId);
+    } catch (error) {
+      console.error('Error ending session:', error);
+      Alert.alert('Error', 'Failed to save attendance data');
+    }
+  };
+
+  const handleCommitAttendance = async () => {
+    await handleEndSession(params.sessionId);
+    console.log("Handle end session success !!!");
+    
+    await endSession(params.sessionId);
   };
 
   const renderItem = ({ item }: { item: AttendanceRecord }) => (
@@ -161,11 +181,20 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
       {attendance.length === 0 ? (
         <Text style={styles.message}>No students found</Text>
       ) : (
-        <FlatList<AttendanceRecord>
-          data={attendance}
-          keyExtractor={(item) => item.user_id}
-          renderItem={renderItem}
-        />
+        <>
+          <FlatList<AttendanceRecord>
+            data={attendance}
+            keyExtractor={(item) => item.user_id}
+            renderItem={renderItem}
+            style={styles.list}
+          />
+          <TouchableOpacity 
+            style={styles.commitButton}
+            onPress={endSession(params.sessionId)}
+          >
+            <Text style={styles.commitButtonText}>Commit Attendance</Text>
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );
@@ -182,6 +211,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  list: {
+    flex: 1,
+    marginBottom: 16,
   },
   studentRow: {
     flexDirection: 'row',
@@ -242,6 +275,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     color: '#dc3545',
+  },
+  commitButton: {
+    backgroundColor: '#007bff',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  commitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
