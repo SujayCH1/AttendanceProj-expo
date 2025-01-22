@@ -111,17 +111,19 @@ export default function bleService(): BLEAPI {
       await BLEAdvertiser.enableAdapter();
       
       // Convert UUID to a compatible format if needed
-      const cleanUUID = uuid.replace(/-/g, '');
+      // const cleanUUID = uuid.replace(/-/g, '');
+      // console.log("clean uuid",cleanUUID);
+      
       
       const advertiserConfig = {
-        serviceUuids: [cleanUUID],
+        serviceUuids: [uuid],
         includeTxPowerLevel: true,
         includeDeviceName: false,
-        manufacturerId: 0x0000, // You can customize this
+        manufacturerId: 0x00E0, // You can customize this
         manufacturerData: [0x00], // You can customize this
       };
-
-      await BLEAdvertiser.broadcast(cleanUUID, advertiserConfig.manufacturerData, {
+      BLEAdvertiser.setCompanyId(advertiserConfig.manufacturerId)
+      await BLEAdvertiser.broadcast(uuid, advertiserConfig.manufacturerData, {
         advertiseMode: BLEAdvertiser.ADVERTISE_MODE_LOW_POWER,
         txPowerLevel: BLEAdvertiser.ADVERTISE_TX_POWER_LOW,
         connectable: false,
