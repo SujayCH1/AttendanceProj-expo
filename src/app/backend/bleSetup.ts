@@ -1,6 +1,7 @@
 import { PermissionsAndroid, Alert, Platform } from "react-native";
 import { BleManager, Device, State } from "react-native-ble-plx";
 import { insertStudentUUIDinActiveSessions } from "../api/useGetData";
+import BLEAdvertiser from 'react-native-ble-advertiser';
 
 interface BLEAPI {
   requestPermissions(): Promise<boolean>;
@@ -11,6 +12,7 @@ interface BLEAPI {
   cleanup(): void;
 }
 
+let isAdvertising = false;
 export default function bleService(): BLEAPI {
   const manager = new BleManager();
   let scanSubscription: any = null;
@@ -106,9 +108,22 @@ export default function bleService(): BLEAPI {
 
   const startAdvertising = async (uuid: string): Promise<void> => {
     try {
-      // Note: react-native-ble-plx doesn't support advertising
-      // You'll need a separate library like react-native-ble-advertiser for this
-      throw new Error("Advertising not supported with react-native-ble-plx");
+      await BLEAdvertiser.enableAdapter();
+      
+      // Convert UUID to a compatible format if needed
+      const cleanUUID = uuid.replace(/-/g, '');
+      
+      const advertiserConfig = {
+        serviceUuids: [cleanUUID],
+        includeTxPowerLevel: true,
+        includeDeviceName: false,
+        manufacturerId: 0x0000, // You can customize this
+        manufacturerData: [0x00], // You can customize this
+      };
+
+      await BLEAdvertiser.broadcast(cleanUUID, advertiserConfig);
+      isAdvertising = true;
+      console.log('Started advertising with UUID:', uuid);
     } catch (error) {
       console.error("Error starting advertisement:", error);
       throw error;
@@ -116,8 +131,16 @@ export default function bleService(): BLEAPI {
   };
 
   const stopAdvertising = async (): Promise<void> => {
-    // Not implemented as advertising isn't supported
-    console.log("Advertising stop called (not implemented)");
+    try {
+      if (isAdvertising) {
+        await BLEAdvertiser.stopBroadcast();
+        isAdvertising = false;
+        console.log('Stopped advertising');
+      }
+    } catch (error) {
+      console.error("Error stopping advertisement:", error);
+      throw error;
+    }
   };
 
   const cleanup = (): void => {
