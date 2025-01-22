@@ -121,7 +121,13 @@ export default function bleService(): BLEAPI {
         manufacturerData: [0x00], // You can customize this
       };
 
-      await BLEAdvertiser.broadcast(cleanUUID, advertiserConfig);
+      await BLEAdvertiser.broadcast(cleanUUID, advertiserConfig.manufacturerData, {
+        advertiseMode: BLEAdvertiser.ADVERTISE_MODE_LOW_POWER,
+        txPowerLevel: BLEAdvertiser.ADVERTISE_TX_POWER_LOW,
+        connectable: false,
+        includeDeviceName: false,
+        includeTxPowerLevel: false
+      });
       isAdvertising = true;
       console.log('Started advertising with UUID:', uuid);
     } catch (error) {
