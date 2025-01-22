@@ -13,6 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
 import { supabase } from '../utils/supabase';
+import { moveAttendanceToMainTable, deleteSessionFromTeacherTable } from '../api/useGetData';
 
 type RouteParams = {
   facultyId: string;
@@ -99,29 +100,61 @@ const MarkAttendance = () => {
     }
   };
 
+  const handleEndSession = async (sessionId) => {
+    try {
+      // Step 1: Move attendance data
+      const moveResult = await moveAttendanceToMainTable(sessionId);
+      if (!moveResult.success) {
+        console.error('Failed to move attendance data:', moveResult.error || moveResult.message);
+        return;
+      }
+  
+      console.log('Attendance data successfully moved.');
+  
+      // Step 2: Delete session
+      const deleteResult = await deleteSessionFromTeacherTable(sessionId);
+      if (!deleteResult.success) {
+        console.error('Failed to delete session:', deleteResult.error);
+        return;
+      }
+  
+      console.log('Session successfully deleted.');
+    } catch (error) {
+      console.error('Error handling session end:', error);
+    }
+  };
+
   const endSession = async () => {
     try {
       if (currentSessionId) {
-        await supabase.from('active_sessions')
+        // Update session end time
+        await supabase
+          .from('active_sessions')
           .update({ end_time: new Date().toISOString() })
           .eq('session_id', currentSessionId);
-
+  
+        // Insert attendance data if students are marked
         if (markedStudents.length > 0) {
           await supabase.from('attendance_table').insert({
             session_id: currentSessionId,
             date: new Date().toISOString(),
-            students: markedStudents.map((student) => student.uuid),
+            student_list: markedStudents.map((student) => student.uuid),
           });
         }
       }
+  
+      // Stop BLE services
       await ble.stopAdvertising();
       await ble.cleanup();
+  
+      // Handle session end (move and delete data)
+      await handleEndSession(currentSessionId);
     } catch (error) {
       console.error('Error ending session:', error);
       Alert.alert('Error', 'Failed to save attendance data');
     }
   };
-
+  
   const handleMarkAttendance = async () => {
     if (isLoading) return;
 
