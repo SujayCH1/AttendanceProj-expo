@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchStudentInfo, getActiveSessionsForStudent } from '../api/useGetData';
 import { UserContext } from '../context/UserContext';
@@ -40,15 +40,15 @@ const StudentView = () => {
   };
 
   const handleSessionClick = (session) => {
-    console.log("Pushing Data ", "faculty id: ", session.faculty_user_id, "subject id: ", session.subject_id,"Student uuid from student view :",studentInfo.user_id)
+    console.log("Pushing Data ", "faculty id: ", session.faculty_user_id, "subject id: ", session.subject_id, "Student uuid from student view :", studentInfo.user_id);
     router.push({
       pathname: '/components/StudentMarkingAttendance',
       params: {
         sessionId: session.session_id,
-        facultyUuid: session.faculty_user_id, 
+        facultyUuid: session.faculty_user_id,
         subjectName: session.subject.subject_name,
         subjectID: session.subject_id,
-        student_uuid: studentInfo.user_id
+        student_uuid: studentInfo.user_id,
       },
     });
   };
@@ -57,21 +57,20 @@ const StudentView = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Active Attendance Sessions</Text>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={handleRefresh}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          )}
-        </TouchableOpacity>
       </View>
 
       {activeSessions.length === 0 ? (
-        <Text style={styles.noSessions}>No active attendance sessions</Text>
+        <ScrollView
+          contentContainerStyle={styles.noSessionsContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          }
+        >
+          <Text style={styles.noSessions}>No active attendance sessions</Text>
+        </ScrollView>
       ) : (
         <FlatList
           data={activeSessions}
@@ -87,8 +86,16 @@ const StudentView = () => {
               </Text>
             </TouchableOpacity>
           )}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          }
         />
       )}
+
+      <Text style={styles.swipeMessage}>Swipe down to refresh</Text>
     </View>
   );
 };
@@ -96,20 +103,11 @@ const StudentView = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#f9f9f9' },
   headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
   },
-  header: { fontSize: 24, fontWeight: 'bold' },
-  refreshButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    opacity: 1,
-  },
-  refreshButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, marginTop: 10 },
+  noSessionsContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   noSessions: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 20 },
   sessionCard: {
     backgroundColor: '#fff',
@@ -119,11 +117,17 @@ const styles = StyleSheet.create({
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 4,
   },
   subjectName: { fontSize: 18, fontWeight: 'bold' },
   sessionDetails: { fontSize: 14, color: '#666', marginTop: 4 },
+  swipeMessage: {
+    fontSize: 14,
+    color: '#aaa',
+    textAlign: 'center',
+    marginTop: 10,
+  },
 });
 
 export default StudentView;
