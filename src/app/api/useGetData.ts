@@ -326,8 +326,10 @@ export const fetchSemId = async (params): Promise<string | null> => {
 };
 
 
-export const moveAttendanceToMainTable = async (sessionId, semID) => {
+export const moveAttendanceToMainTable = async (sessionId, semID, markedStudents) => {
   // Fetch data from active_sessions
+  console.log("MARKEDD STUDENTS",markedStudents);
+  
   const { data, error } = await supabase
     .from('active_sessions')
     .select('session_id, faculty_user_id, student_user_id_array, start_time, subject_id') // Adjusted fields
@@ -347,12 +349,13 @@ export const moveAttendanceToMainTable = async (sessionId, semID) => {
   console.log("pushing data into attendace table: ", sessionData)
   console.log("pushing semID into attendace table: ", semID)
 
-  // Map data to match attendance_table schema
+  // Map data to match 
+  
   const attendanceData = {
     sem_id: semID, // Assuming subject_id acts as sem_id; adapt as neededs
     session_id: sessionData.session_id,
     faculty_uuid: sessionData.faculty_user_id,
-    student_list: sessionData.student_user_id_array,
+    student_list: markedStudents,
   };
 
   // Insert into attendance_table

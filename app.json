@@ -4,7 +4,7 @@
     "slug": "AttendanceApp-expo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./src/assets/attendance_icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,6 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./src/assets/attendance_icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.AttendanceAppexpo",
