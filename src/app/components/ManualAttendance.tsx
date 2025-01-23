@@ -12,6 +12,14 @@ interface ManualAttendanceProps {
 
 type RouteParams = {
   sessionId: string;
+  uuid: string;  // Added missing type
+}
+
+interface AttendanceRecord {  // Added missing interface
+  user_id: string;
+  name: string;
+  prn: string;
+  status: 'Present' | 'Absent';
 }
 
 const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
@@ -26,6 +34,10 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
   useEffect(() => {
     const getSemId = async () => {
       try {
+        // Ensure params.uuid exists before calling fetchSemId
+        if (!params.uuid) {
+          throw new Error('Session UUID is undefined');
+        }
         const id = await fetchSemId(params);
         setSemId(id);
         if (id) {
@@ -41,8 +53,8 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
       try {
         setLoading(true);
         const [allStudents, presentData] = await Promise.all([
-          getAllStudentsFromDB(currentSemId, facultyId) as Promise<StudentInfo[]>,
-          getPresentStudentsFromDB(params.uuid) as Promise<PresentStudentsData[]>
+          getAllStudentsFromDB(currentSemId, facultyId),
+          getPresentStudentsFromDB(params.uuid!)
         ]);
     
         const presentStudentIds = presentData?.[0]?.student_user_id_array || [];
@@ -63,7 +75,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
     };
     
     getSemId();
-  }, [facultyId]);
+  }, [facultyId, params.uuid]);
 
   const handleStatusChange = (userId: string, status: 'Present' | 'Absent'): void => {
     setAttendance((prev) =>
@@ -81,53 +93,59 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
 
   const handleEndSession = async (sessionId: string) => {
     try {
+      if (!sessionId) {
+        throw new Error('Session ID is undefined');
+      }
+      
       const moveResult = await moveAttendanceToMainTable(sessionId);
       if (!moveResult.success) {
-        console.error('Failed to move attendance data:', moveResult.error || moveResult.message);
-        return;
+        throw new Error(moveResult.error || moveResult.message || 'Failed to move attendance data');
       }
   
       const deleteResult = await deleteSessionFromTeacherTable(sessionId);
       if (!deleteResult.success) {
-        console.error('Failed to delete session:', deleteResult.error);
-        return;
+        throw new Error(deleteResult.error || 'Failed to delete session');
       }
     } catch (error) {
       console.error('Error handling session end:', error);
+      throw error; // Propagate error to caller
     }
   };
 
-  const endSession = (currentSessionId: string) => {
+  const endSession = async (currentSessionId: string) => {
+    console.log(params.sessionId);
+    
+    console.log(currentSessionId);
+    
+    if (!currentSessionId) {
+      Alert.alert('Error', 'Invalid session ID');
+      return;
+    }
+
     try {
-      if (currentSessionId) {
-        supabase
-          .from('active_sessions')
-          .update({ end_time: new Date().toISOString() })
-          .eq('session_id', currentSessionId);
-  
-        if (markedStudents.length > 0) {
-          supabase.from('attendance_table').insert({
-            session_id: currentSessionId,
-            date: new Date().toISOString(),
-            student_list: markedStudents,
-          });
-        }
+      await supabase
+        .from('active_sessions')
+        .update({ end_time: new Date().toISOString() })
+        .eq('session_id', currentSessionId);
+
+      if (markedStudents.length > 0) {
+        await supabase.from('attendance_table').insert({
+          session_id: currentSessionId,
+          date: new Date().toISOString(),
+          student_list: markedStudents,
+        });
       }
-  
-     ble.stopAdvertising();
-     ble.cleanup();
-     handleEndSession(currentSessionId);
+
+      await ble.stopAdvertising();
+      await ble.cleanup();
+      await handleEndSession(currentSessionId);
+      
+      // Add navigation or success feedback here
+      Alert.alert('Success', 'Session ended successfully');
     } catch (error) {
       console.error('Error ending session:', error);
       Alert.alert('Error', 'Failed to save attendance data');
     }
-  };
-
-  const handleCommitAttendance = async () => {
-    await handleEndSession(params.sessionId);
-    console.log("Handle end session success !!!");
-    
-    await endSession(params.sessionId);
   };
 
   const renderItem = ({ item }: { item: AttendanceRecord }) => (
@@ -182,7 +200,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
         <Text style={styles.message}>No students found</Text>
       ) : (
         <>
-          <FlatList<AttendanceRecord>
+          <FlatList
             data={attendance}
             keyExtractor={(item) => item.user_id}
             renderItem={renderItem}
@@ -190,7 +208,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
           />
           <TouchableOpacity 
             style={styles.commitButton}
-            onPress={endSession(params.sessionId)}
+            onPress={() => endSession(params.sessionId)}  
           >
             <Text style={styles.commitButtonText}>Commit Attendance</Text>
           </TouchableOpacity>
