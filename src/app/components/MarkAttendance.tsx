@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import bleService from '../backend/bleSetup';
 import { supabase } from '../utils/supabase';
-import { moveAttendanceToMainTable, deleteSessionFromTeacherTable } from '../api/useGetData';
+import { moveAttendanceToMainTable, deleteSessionFromTeacherTable, fetchSemId } from '../api/useGetData';
 
 type RouteParams = {
   facultyId: string;
@@ -38,6 +38,7 @@ const MarkAttendance = () => {
   const [markedStudents, setMarkedStudents] = useState<Student[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [semID, setSemID] = useState("");
   const ble = bleService();
 
   useEffect(() => {
@@ -47,6 +48,7 @@ const MarkAttendance = () => {
       router.back();
       return;
     }
+    
 
     const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
     const foundUuidListener = eventEmitter.addListener('foundUuid', (data) => {
@@ -58,11 +60,27 @@ const MarkAttendance = () => {
 
     return () => {
       foundUuidListener.remove();
-      if (isSessionActive) {
-        endSession();
-      }
+
     };
   }, [params.uuid, isSessionActive]);
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const temp = await fetchSemId(params);
+        if(temp) {
+
+          setSemID(temp);
+        } else {
+          console.error("Error fetchin seester id in mark attendace")
+        }
+      } catch (error) {
+        console.error("Error fetching SEM ID:", error);
+      }
+    };
+  
+    getData();
+  }, [params]);
 
   const markStudentAttendance = (studentUuid: string) => {
     setMarkedStudents((prev) => {
@@ -103,7 +121,7 @@ const MarkAttendance = () => {
   const handleEndSession = async (sessionId) => {
     try {
       // Step 1: Move attendance data
-      const moveResult = await moveAttendanceToMainTable(sessionId);
+      const moveResult = await moveAttendanceToMainTable(sessionId, semID);
       if (!moveResult.success) {
         console.error('Failed to move attendance data:', moveResult.error || moveResult.message);
         return;

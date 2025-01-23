@@ -293,9 +293,7 @@ export const getAllStudentsFromDB = async (semID: string, faculty_id: string) =>
 
 export const fetchSemId = async (params): Promise<string | null> => {
   try {
-    console.log("Params from useGetData :", params);
     let sem: number = params.semester
-    console.log("Sem Check :", sem);
 
     const { data, error } = await supabase
       .from('sem_info')
@@ -328,7 +326,7 @@ export const fetchSemId = async (params): Promise<string | null> => {
 };
 
 
-export const moveAttendanceToMainTable = async (sessionId) => {
+export const moveAttendanceToMainTable = async (sessionId, semID) => {
   // Fetch data from active_sessions
   const { data, error } = await supabase
     .from('active_sessions')
@@ -346,11 +344,12 @@ export const moveAttendanceToMainTable = async (sessionId) => {
   }
 
   const sessionData = data[0];
+  console.log("pushing data into attendace table: ", sessionData)
+  console.log("pushing semID into attendace table: ", semID)
 
   // Map data to match attendance_table schema
   const attendanceData = {
-    sem_id: sessionData.subject_id, // Assuming subject_id acts as sem_id; adapt as needed
-    date: sessionData.start_time,
+    sem_id: semID, // Assuming subject_id acts as sem_id; adapt as neededs
     session_id: sessionData.session_id,
     faculty_uuid: sessionData.faculty_user_id,
     student_list: sessionData.student_user_id_array,
@@ -373,12 +372,12 @@ export const moveAttendanceToMainTable = async (sessionId) => {
 // Query 2: Delete session from teacher table
 export const deleteSessionFromTeacherTable = async (sessionId) => {
   const { error } = await supabase
-    .from('teacher_table') // Replace with the actual teacher table name
+    .from('active_sessions') // Replace with the actual teacher table name
     .delete()
     .eq('session_id', sessionId);
 
   if (error) {
-    console.error('Error deleting session from teacher_table:', error);
+    console.error('Error deleting session from ACTUVE SEESION:', error);
     return { success: false, error };
   }
 
