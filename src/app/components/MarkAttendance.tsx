@@ -203,7 +203,8 @@ const MarkAttendance = () => {
         semester: params.semester,
         branch: params.branch,
         division: params.division,
-        batch: params.batch
+        batch: params.batch,
+        sessionId: currentSessionId,
       }
     });
   };

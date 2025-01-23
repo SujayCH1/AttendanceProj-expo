@@ -108,7 +108,7 @@ export default function bleService(): BLEAPI {
 
   const startAdvertising = async (uuid: string): Promise<void> => {
     try {
-      await BLEAdvertiser.enableAdapter();
+      BLEAdvertiser.enableAdapter();
       
       // Convert UUID to a compatible format if needed
       // const cleanUUID = uuid.replace(/-/g, '');
