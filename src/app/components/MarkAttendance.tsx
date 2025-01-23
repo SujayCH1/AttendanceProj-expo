@@ -270,9 +270,9 @@ const MarkAttendance = () => {
       </TouchableOpacity>
 
       <View style={styles.studentsContainer}>
-        <Text style={styles.studentsHeader}>
+        {/* <Text style={styles.studentsHeader}>
           {`Marked Students: ${markedStudents.length}`}
-        </Text>
+        </Text> */}
         {markedStudents.map((student, index) => (
           <View key={student.uuid} style={styles.studentRow}>
             <Text style={styles.studentText}>

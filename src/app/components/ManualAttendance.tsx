@@ -97,7 +97,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
         throw new Error('Session ID is undefined');
       }
       
-      const moveResult = await moveAttendanceToMainTable(sessionId, semId);
+      const moveResult = await moveAttendanceToMainTable(sessionId, semId, markedStudents);
       if (!moveResult.success) {
         throw new Error(moveResult.error || moveResult.message || 'Failed to move attendance data');
       }
@@ -113,6 +113,8 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ facultyId }) => {
   };
 
   const endSession = async (currentSessionId: string) => {
+    console.log(markedStudents);
+    
     console.log(params.sessionId);
     
     console.log(currentSessionId);
